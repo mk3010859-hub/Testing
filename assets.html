@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyMed Pro - Asset Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="security.js"></script>
+    <style>
+        /* Same as before - keeping it compact */
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+        body{background:#eef2f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:#0b2a4a;color:#fff;padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+        .sidebar .logo{padding:0 20px 20px;font-size:1.2rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sidebar .logo i{color:#7bc5f5}
+        .sidebar .logo small{font-size:.6rem;opacity:.6;font-weight:400;display:block}
+        .sidebar .nav{padding:15px 0;flex:1}
+        .sidebar .nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;border-left:3px solid transparent}
+        .sidebar .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .sidebar .nav a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .sidebar .nav a i{width:20px;text-align:center}
+        .sidebar .user{padding:15px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.8rem;display:flex;align-items:center;gap:10px}
+        .sidebar .user .name{font-weight:600}
+        .sidebar .user .role{font-size:.65rem;opacity:.6}
+        .sidebar .folder-info{padding:8px 20px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.7rem;opacity:.8}
+        .sidebar .folder-info:hover{opacity:1;background:rgba(255,255,255,.05)}
+        .sidebar .folder-info i{margin-right:6px}
+        .sidebar .folder-info .sub{font-size:.6rem;opacity:.5;display:block;margin-top:2px}
+        
+        .nav-group{position:relative}
+        .nav-group-header{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;cursor:pointer;border-left:3px solid transparent}
+        .nav-group-header:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-group-header.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub{padding-left:20px;max-height:0;overflow:hidden;transition:max-height .3s ease}
+        .nav-sub.open{max-height:300px}
+        .nav-sub a{display:flex;align-items:center;gap:12px;padding:8px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.78rem;transition:.2s;border-left:3px solid transparent}
+        .nav-sub a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-sub a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub a i{width:20px;text-align:center;font-size:.7rem}
+
+        .main{flex:1;padding:20px 24px;overflow-y:auto;max-height:100vh}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+        .header h1{font-size:1.3rem;color:#1a3a5a}
+        .header-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+        .btn{padding:5px 14px;border:none;border-radius:30px;cursor:pointer;font-size:.75rem;transition:.2s;display:inline-flex;align-items:center;gap:4px;text-decoration:none;font-weight:600}
+        .btn-primary{background:#2a6b9e;color:#fff}
+        .btn-primary:hover{background:#1e4f77}
+        .btn-success{background:#1e8b5c;color:#fff}
+        .btn-success:hover{background:#156a45}
+        .btn-warning{background:#d48a2e;color:#fff}
+        .btn-warning:hover{background:#b87a22}
+        .btn-danger{background:#c44545;color:#fff}
+        .btn-danger:hover{background:#a13232}
+        .btn-outline{background:transparent;border:1px solid #dce4ed;color:#3a5a7a}
+        .btn-outline:hover{background:#f5f8fc}
+        .btn-sm{padding:2px 10px;font-size:.65rem}
+
+        .filter-bar{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px 12px;background:#f7faff;border-radius:10px;border:1px solid #e8edf5;margin-bottom:10px}
+        .filter-bar select,.filter-bar input{padding:3px 10px;border-radius:30px;border:1px solid #dce4ed;background:#fff;font-size:.7rem}
+        .filter-bar select:focus,.filter-bar input:focus{outline:0;border-color:#2a6b9e}
+
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+        .stat-card{background:#fff;border-radius:10px;padding:10px 14px;border:1px solid #e8edf5}
+        .stat-card .label{font-size:.6rem;text-transform:uppercase;color:#7a8fa5;font-weight:700}
+        .stat-card .value{font-size:1.1rem;font-weight:700;color:#1a3a5a}
+
+        .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8edf5;height:calc(100vh - 380px);overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:.72rem;min-width:1700px}
+        th{background:#f5f8fc;padding:5px 8px;text-align:left;font-weight:700;color:#3a5a7a;position:sticky;top:0;z-index:2;border-bottom:2px solid #e0e7ef;white-space:nowrap;font-size:.6rem}
+        td{padding:4px 8px;border-bottom:1px solid #eef3f9}
+        tr:hover td{background:#f7faff}
+
+        .badge{display:inline-block;padding:1px 8px;border-radius:30px;font-size:.5rem;font-weight:700}
+        .badge-success{background:#dff0e8;color:#1a6a4a}
+        .badge-warning{background:#fdf0e0;color:#a87020}
+        .badge-danger{background:#fce8e8;color:#a84040}
+        .badge-info{background:#ddeaf5;color:#1a5a7a}
+        .badge-purple{background:#e8dff5;color:#5a3a7a}
+        .badge-issued{background:#e8f0fe;color:#1a5cff}
+        .badge-returned{background:#dff0e8;color:#1a6a4a}
+        .badge-transferred{background:#fdf0e0;color:#a87020}
+
+        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:#fff;border-radius:16px;padding:20px;max-width:850px;width:95%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+        .modal-box h3{margin-bottom:14px;color:#1a3a5a;display:flex;align-items:center;gap:10px;font-size:1.1rem}
+        .modal-box .form-group{margin-bottom:8px}
+        .modal-box .form-group label{font-size:.72rem;font-weight:600;color:#3a5a7a;display:block;margin-bottom:2px}
+        .modal-box .form-group input,.modal-box .form-group select,.modal-box .form-group textarea{width:100%;padding:5px 10px;border:1px solid #dce4ed;border-radius:6px;font-size:.75rem;font-family:inherit}
+        .modal-box .form-group input:focus,.modal-box .form-group select:focus,.modal-box .form-group textarea:focus{outline:0;border-color:#2a6b9e}
+        .modal-actions{display:flex;gap:10px;margin-top:14px;justify-content:flex-end;padding-top:14px;border-top:1px solid #eef3f9}
+        .modal-actions .btn{padding:6px 18px}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+        .form-grid .full{grid-column:1/-1}
+
+        .empty-state{text-align:center;padding:30px;color:#7a8fa5}
+        .empty-state i{font-size:1.4rem;opacity:.3;display:block;margin-bottom:6px}
+
+        .toast{position:fixed;bottom:20px;right:20px;background:#1e8b5c;color:#fff;padding:12px 24px;border-radius:10px;font-size:.85rem;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+        .toast.error{background:#c44545}
+
+        @media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .logo small,.sidebar .nav a span,.sidebar .user .name,.sidebar .user .role,.sidebar .folder-info span{display:none}.sidebar .nav a{padding:10px 18px;justify-content:center}.sidebar .folder-info .sub{display:none}.main{padding:12px}.form-grid{grid-template-columns:1fr 1fr}}
+    </style>
+</head>
+<body>
+
+<script>
+    (function() {
+        if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    })();
+
+    function toggleSubMenu(id) {
+        const sub = document.getElementById(id);
+        const arrow = document.getElementById(id + 'Arrow');
+        if (!sub) return;
+        sub.classList.toggle('open');
+        if (arrow) {
+            arrow.style.transform = sub.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const financeSub = document.getElementById('financeSub');
+        if (financeSub) {
+            const hasActive = financeSub.querySelector('a.active');
+            if (hasActive) {
+                financeSub.classList.add('open');
+                const arrow = document.getElementById('financeArrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+</script>
+
+<div class="sidebar">
+    <div class="logo">
+        <i class="fas fa-notes-medical"></i> <span>SkyMed</span>
+        <small>v6.0</small>
+    </div>
+    <div class="nav">
+        <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+        <a href="master.html"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+        <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+        <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+        
+        <div class="nav-group">
+            <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+                <i class="fas fa-coins"></i> <span>Finance</span>
+                <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+            </div>
+            <div class="nav-sub" id="financeSub">
+                <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+                <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+                <a href="advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+                <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+            </div>
+        </div>
+        
+        <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+        <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+        <a href="assets.html" class="active"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        <a href="imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
+        <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+        <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+    </div>
+    <div class="folder-info" onclick="selectFolder()">
+        <i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span>
+        <span class="sub">Click to choose folder</span>
+    </div>
+    <div class="user">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;opacity:.7;"></i>
+        <div><span class="name">Admin</span><br><span class="role">Administrator</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <h1><i class="fas fa-laptop" style="color:#6c3483;"></i> Asset Management</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="openAssetModal()"><i class="fas fa-plus"></i> Add Asset</button>
+            <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-warning" onclick="exportAssets()"><i class="fas fa-file-excel"></i> Export</button>
+            <button class="btn btn-outline" onclick="document.getElementById('importAssets').click()"><i class="fas fa-upload"></i> Import</button>
+            <button class="btn btn-outline" onclick="manualSave()"><i class="fas fa-save"></i> Save</button>
+            <input type="file" id="importAssets" accept=".csv,.xlsx" style="display:none" onchange="importAssets(event)">
+        </div>
+    </div>
+
+    <div class="stats-grid" id="assetStats">
+        <div class="stat-card"><div class="label">Total Assets</div><div class="value" id="statTotal">0</div></div>
+        <div class="stat-card"><div class="label">Issued</div><div class="value" id="statIssued">0</div></div>
+        <div class="stat-card"><div class="label">Available</div><div class="value" id="statAvailable">0</div></div>
+        <div class="stat-card"><div class="label">Returned</div><div class="value" id="statReturned">0</div></div>
+        <div class="stat-card"><div class="label">Transferred</div><div class="value" id="statTransferred">0</div></div>
+    </div>
+
+    <div class="filter-bar">
+        <select id="filterCategory" onchange="renderAssets()"><option value="">All Categories</option></select>
+        <select id="filterStatus" onchange="renderAssets()"><option value="">All Status</option>
+            <option value="Available">Available</option>
+            <option value="Issued">Issued</option>
+            <option value="Returned">Returned</option>
+            <option value="Transferred">Transferred</option>
+        </select>
+        <select id="filterEmployee" onchange="renderAssets()"><option value="">All Employees</option></select>
+        <input type="text" id="filterSearch" placeholder="Search asset name, serial..." oninput="renderAssets()">
+        <button class="btn btn-primary" onclick="renderAssets()"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn btn-outline" onclick="resetFilters()"><i class="fas fa-undo-alt"></i> Reset</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Asset Name</th>
+                    <th>Category</th>
+                    <th>Serial No</th>
+                    <th>Model</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Issue Date</th>
+                    <th>Return Date</th>
+                    <th>Transfer History</th>
+                    <th>Remarks</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="assetBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ASSET MODAL -->
+<div class="modal-overlay" id="assetModal">
+    <div class="modal-box">
+        <h3 id="assetModalTitle"><i class="fas fa-plus"></i> Add Asset</h3>
+        <div id="assetModalBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeAssetModal()">Cancel</button>
+            <button class="btn btn-success" id="assetSaveBtn" onclick="saveAsset()"><i class="fas fa-save"></i> Save Asset</button>
+        </div>
+    </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assignModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-user-check"></i> Assign / Transfer / Return Asset</h3>
+        <div id="assignModalBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeAssignModal()">Cancel</button>
+            <button class="btn btn-success" onclick="saveAssignment()"><i class="fas fa-save"></i> Apply</button>
+        </div>
+    </div>
+</div>
+
+<script src="db.js"></script>
+<script>
+// ============================================================
+// DATA
+// ============================================================
+let assets = [], employees = [], dataLoaded = false;
+let editAssetId = null, assignAssetId = null;
+
+const ASSET_CATEGORIES = [
+    'Laptop', 'Desktop', 'BA Instrument - Alco-IV', 'BA Instrument - Drager',
+    'BA Instrument Printer', 'Hard Disk', 'UV Sterilizer', 'CCTV',
+    'Display CCTV', 'Chair', 'Other'
+];
+
+// ============================================================
+// LOAD DATA - FIXED: Properly loading employees from db
+// ============================================================
+async function loadAssets() {
+    try {
+        // 🔥 FIX: Properly load employees from db
+        employees = await db.getAll('employees') || [];
+        assets = await db.getAll('assets') || [];
+        dataLoaded = true;
+        
+        console.log('👥 Employees loaded in Assets:', employees.length);
+        console.log('📦 Assets loaded:', assets.length);
+        
+        populateFilters();
+        renderAssets();
+        updateStats();
+    } catch(e) {
+        console.error('Load failed:', e);
+        setTimeout(loadAssets, 1000);
+    }
+}
+
+function populateFilters() {
+    const catSel = document.getElementById('filterCategory');
+    const current = catSel.value;
+    catSel.innerHTML = '<option value="">All Categories</option>';
+    ASSET_CATEGORIES.forEach(c => {
+        catSel.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+    if (current) catSel.value = current;
+
+    const empSel = document.getElementById('filterEmployee');
+    const empCurrent = empSel.value;
+    empSel.innerHTML = '<option value="">All Employees</option>';
+    employees.forEach(e => {
+        empSel.innerHTML += `<option value="${e.id}">${e.empId} - ${e.name} (${e.base || ''})</option>`;
+    });
+    if (empCurrent) empSel.value = empCurrent;
+}
+
+function resetFilters() {
+    document.getElementById('filterCategory').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterEmployee').value = '';
+    document.getElementById('filterSearch').value = '';
+    renderAssets();
+}
+
+function updateStats() {
+    const total = assets.length;
+    const issued = assets.filter(a => a.status === 'Issued').length;
+    const available = assets.filter(a => a.status === 'Available').length;
+    const returned = assets.filter(a => a.status === 'Returned').length;
+    const transferred = assets.filter(a => a.status === 'Transferred').length;
+    
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statIssued').textContent = issued;
+    document.getElementById('statAvailable').textContent = available;
+    document.getElementById('statReturned').textContent = returned;
+    document.getElementById('statTransferred').textContent = transferred;
+}
+
+function getEmployeeName(id) {
+    if (!id) return '-';
+    const emp = employees.find(e => e.id === id);
+    return emp ? `${emp.empId} - ${emp.name}` : id;
+}
+
+function renderAssets() {
+    if (!dataLoaded) return;
+
+    const categoryFilter = document.getElementById('filterCategory').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const employeeFilter = document.getElementById('filterEmployee').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+    let data = assets;
+    if (categoryFilter) data = data.filter(a => a.category === categoryFilter);
+    if (statusFilter) data = data.filter(a => a.status === statusFilter);
+    if (employeeFilter) data = data.filter(a => a.assignedTo === employeeFilter);
+    if (search) data = data.filter(a =>
+        (a.name || '').toLowerCase().includes(search) ||
+        (a.serialNo || '').toLowerCase().includes(search) ||
+        (a.model || '').toLowerCase().includes(search)
+    );
+
+    const tbody = document.getElementById('assetBody');
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state"><i class="fas fa-inbox"></i>No assets found</td></tr>';
+        return;
+    }
+
+    let html = '';
+    data.forEach(a => {
+        const statusBadge = a.status === 'Available' ? 'badge-success' :
+                           a.status === 'Issued' ? 'badge-issued' :
+                           a.status === 'Returned' ? 'badge-returned' :
+                           a.status === 'Transferred' ? 'badge-transferred' : 'badge-warning';
+        
+        const assignedName = a.assignedTo ? getEmployeeName(a.assignedTo) : '-';
+        
+        const historyCount = a.history ? a.history.length : 0;
+        const historyPreview = a.history && a.history.length > 0 ? 
+            a.history.slice(-3).map(h => `${h.action} → ${h.to || h.from || ''}`).join('; ') : '-';
+
+        html += `<tr>
+            <td><strong>${a.name || '-'}</strong></td>
+            <td><span class="badge badge-info">${a.category || '-'}</span></td>
+            <td style="font-size:.65rem;font-family:monospace;">${a.serialNo || '-'}</td>
+            <td>${a.model || '-'}</td>
+            <td><span class="badge ${statusBadge}">${a.status || 'Available'}</span></td>
+            <td>${assignedName}</td>
+            <td style="font-size:.65rem;">${a.issueDate || '-'}</td>
+            <td style="font-size:.65rem;">${a.returnDate || '-'}</td>
+            <td style="font-size:.6rem;color:#7a8fa5;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${historyPreview}">${historyPreview}</td>
+            <td style="font-size:.65rem;">${a.remarks || '-'}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="editAsset('${a.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-success btn-sm" onclick="openAssignModal('${a.id}')"><i class="fas fa-user-check"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="deleteAsset('${a.id}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// ASSET MODAL - With Employee Dropdown from Payroll
+// ============================================================
+function openAssetModal(assetId) {
+    const asset = assetId ? assets.find(a => a.id === assetId) : null;
+    editAssetId = asset ? asset.id : null;
+
+    document.getElementById('assetModalTitle').innerHTML = asset ? 
+        '<i class="fas fa-edit"></i> Edit Asset' : 
+        '<i class="fas fa-plus"></i> Add Asset';
+
+    const categoryOpts = ASSET_CATEGORIES.map(c => 
+        `<option value="${c}" ${asset && asset.category === c ? 'selected' : ''}>${c}</option>`
+    ).join('');
+
+    // 🔥 FIX: Employee dropdown from payroll data
+    const empOpts = employees.map(e => 
+        `<option value="${e.id}" ${asset && asset.assignedTo === e.id ? 'selected' : ''}>${e.empId} - ${e.name} (${e.base || ''})</option>`
+    ).join('');
+
+    const statusOpts = ['Available', 'Issued', 'Returned', 'Transferred'].map(s => 
+        `<option value="${s}" ${asset && asset.status === s ? 'selected' : ''}>${s}</option>`
+    ).join('');
+
+    document.getElementById('assetModalBody').innerHTML = `
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Asset Name *</label>
+                <input type="text" id="f_assetName" value="${asset ? asset.name : ''}" placeholder="e.g., Dell Latitude 5420">
+            </div>
+            <div class="form-group">
+                <label>Category *</label>
+                <select id="f_assetCategory">${categoryOpts}</select>
+            </div>
+            <div class="form-group">
+                <label>Serial No</label>
+                <input type="text" id="f_serialNo" value="${asset ? asset.serialNo : ''}" placeholder="Serial number">
+            </div>
+            <div class="form-group">
+                <label>Model</label>
+                <input type="text" id="f_model" value="${asset ? asset.model : ''}" placeholder="Model number">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="f_status">${statusOpts}</select>
+            </div>
+            <div class="form-group">
+                <label>Purchase Date</label>
+                <input type="date" id="f_purchaseDate" value="${asset ? asset.purchaseDate : ''}">
+            </div>
+            <div class="form-group">
+                <label>Assigned To (Employee)</label>
+                <select id="f_assignedTo">
+                    <option value="">-- Not Assigned --</option>
+                    ${empOpts}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Issue Date</label>
+                <input type="date" id="f_issueDate" value="${asset ? asset.issueDate : ''}">
+            </div>
+            <div class="form-group">
+                <label>Return Date</label>
+                <input type="date" id="f_returnDate" value="${asset ? asset.returnDate : ''}">
+            </div>
+            <div class="form-group">
+                <label>Warranty Until</label>
+                <input type="date" id="f_warrantyDate" value="${asset ? asset.warrantyDate : ''}">
+            </div>
+            <div class="form-group full">
+                <label>Remarks</label>
+                <input type="text" id="f_remarks" value="${asset ? asset.remarks : ''}" placeholder="Any notes...">
+            </div>
+        </div>
+        <input type="hidden" id="f_editId" value="${editAssetId || ''}">
+    `;
+
+    document.getElementById('assetModal').classList.add('active');
+    document.getElementById('assetSaveBtn').onclick = saveAsset;
+}
+
+function closeAssetModal() {
+    document.getElementById('assetModal').classList.remove('active');
+    editAssetId = null;
+}
+
+async function saveAsset() {
+    const name = document.getElementById('f_assetName').value.trim();
+    const category = document.getElementById('f_assetCategory').value;
+    const serialNo = document.getElementById('f_serialNo').value.trim();
+    const model = document.getElementById('f_model').value.trim();
+    const status = document.getElementById('f_status').value;
+    const assignedTo = document.getElementById('f_assignedTo').value;
+    const issueDate = document.getElementById('f_issueDate').value;
+    const returnDate = document.getElementById('f_returnDate').value;
+    const purchaseDate = document.getElementById('f_purchaseDate').value;
+    const warrantyDate = document.getElementById('f_warrantyDate').value;
+    const remarks = document.getElementById('f_remarks').value.trim();
+    const editId = document.getElementById('f_editId').value;
+
+    if (!name || !category) {
+        showToast('⚠️ Asset Name and Category are required!', true);
+        return;
+    }
+
+    let finalIssueDate = issueDate;
+    let finalStatus = status;
+    if (assignedTo && !issueDate) {
+        finalIssueDate = new Date().toISOString().split('T')[0];
+    }
+    if (assignedTo && (status === 'Available' || !status)) {
+        finalStatus = 'Issued';
+    }
+    if (!assignedTo && status === 'Issued') {
+        finalStatus = 'Available';
+    }
+
+    const assetData = {
+        name,
+        category,
+        serialNo: serialNo || '',
+        model: model || '',
+        status: finalStatus,
+        assignedTo: assignedTo || '',
+        issueDate: finalIssueDate || '',
+        returnDate: returnDate || '',
+        purchaseDate: purchaseDate || '',
+        warrantyDate: warrantyDate || '',
+        remarks: remarks || '',
+        history: [],
+        updatedAt: new Date().toISOString()
+    };
+
+    if (editId) {
+        const existing = assets.find(a => a.id === editId);
+        if (existing) {
+            assetData.history = existing.history || [];
+            if (existing.assignedTo !== assignedTo && assignedTo) {
+                const emp = employees.find(e => e.id === assignedTo);
+                assetData.history.push({
+                    action: 'Assigned',
+                    to: emp ? `${emp.empId} - ${emp.name}` : assignedTo,
+                    employeeId: assignedTo,
+                    date: finalIssueDate || new Date().toISOString().split('T')[0],
+                    remarks: 'Assigned via asset edit'
+                });
+            }
+            const index = assets.findIndex(a => a.id === editId);
+            assets[index] = { ...existing, ...assetData };
+            await db.put('assets', assets[index]);
+            showToast('✅ Asset updated!');
+        }
+    } else {
+        if (assignedTo) {
+            const emp = employees.find(e => e.id === assignedTo);
+            assetData.history.push({
+                action: 'Assigned',
+                to: emp ? `${emp.empId} - ${emp.name}` : assignedTo,
+                employeeId: assignedTo,
+                date: finalIssueDate || new Date().toISOString().split('T')[0],
+                remarks: 'Initial assignment'
+            });
+        }
+        const newAsset = {
+            id: generateId(),
+            ...assetData,
+            createdAt: new Date().toISOString()
+        };
+        assets.push(newAsset);
+        await db.put('assets', newAsset);
+        showToast('✅ Asset added!');
+    }
+
+    closeAssetModal();
+    renderAssets();
+    updateStats();
+}
+
+// ============================================================
+// ASSIGN MODAL
+// ============================================================
+function openAssignModal(assetId) {
+    const asset = assets.find(a => a.id === assetId);
+    if (!asset) {
+        showToast('⚠️ Asset not found!', true);
+        return;
+    }
+    assignAssetId = assetId;
+
+    const empOpts = employees.map(e => 
+        `<option value="${e.id}">${e.empId} - ${e.name} (${e.base || ''})</option>`
+    ).join('');
+
+    document.getElementById('assignModalBody').innerHTML = `
+        <div style="background:#f7faff;padding:10px;border-radius:8px;margin-bottom:12px;font-size:.8rem;">
+            <strong>Asset:</strong> ${asset.name} (${asset.serialNo || 'No Serial'})<br>
+            <strong>Current Status:</strong> <span class="badge ${asset.status === 'Available' ? 'badge-success' : 'badge-warning'}">${asset.status}</span>
+            ${asset.assignedTo ? `<br><strong>Assigned To:</strong> ${getEmployeeName(asset.assignedTo)}` : ''}
+            ${asset.issueDate ? `<br><strong>Issue Date:</strong> ${asset.issueDate}` : ''}
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Action *</label>
+                <select id="f_assignAction" onchange="toggleAssignFields()">
+                    <option value="issue">Issue to Employee</option>
+                    <option value="return">Return from Employee</option>
+                    <option value="transfer">Transfer to Another Employee</option>
+                </select>
+            </div>
+            <div class="form-group" id="assignEmployeeGroup">
+                <label>Employee *</label>
+                <select id="f_assignEmployee">${empOpts}</select>
+            </div>
+            <div class="form-group" id="transferEmployeeGroup" style="display:none;">
+                <label>Transfer To *</label>
+                <select id="f_transferEmployee">${empOpts}</select>
+            </div>
+            <div class="form-group">
+                <label>Date *</label>
+                <input type="date" id="f_assignDate" value="${new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="form-group full">
+                <label>Remarks</label>
+                <input type="text" id="f_assignRemarks" placeholder="Reason for action...">
+            </div>
+        </div>
+        <input type="hidden" id="f_assignAssetId" value="${assetId}">
+    `;
+
+    document.getElementById('assignModal').classList.add('active');
+}
+
+function toggleAssignFields() {
+    const action = document.getElementById('f_assignAction').value;
+    const empGroup = document.getElementById('assignEmployeeGroup');
+    const transferGroup = document.getElementById('transferEmployeeGroup');
+
+    if (action === 'return') {
+        empGroup.style.display = 'none';
+        transferGroup.style.display = 'none';
+    } else if (action === 'transfer') {
+        empGroup.style.display = 'block';
+        transferGroup.style.display = 'block';
+    } else {
+        empGroup.style.display = 'block';
+        transferGroup.style.display = 'none';
+    }
+}
+
+function closeAssignModal() {
+    document.getElementById('assignModal').classList.remove('active');
+    assignAssetId = null;
+}
+
+async function saveAssignment() {
+    const assetId = document.getElementById('f_assignAssetId').value;
+    const action = document.getElementById('f_assignAction').value;
+    const employeeId = document.getElementById('f_assignEmployee').value;
+    const transferEmployeeId = document.getElementById('f_transferEmployee').value;
+    const date = document.getElementById('f_assignDate').value;
+    const remarks = document.getElementById('f_assignRemarks').value.trim();
+
+    const asset = assets.find(a => a.id === assetId);
+    if (!asset) {
+        showToast('⚠️ Asset not found!', true);
+        return;
+    }
+
+    if (!date) {
+        showToast('⚠️ Date is required!', true);
+        return;
+    }
+
+    if (!asset.history) asset.history = [];
+
+    if (action === 'issue') {
+        if (!employeeId) {
+            showToast('⚠️ Please select an employee!', true);
+            return;
+        }
+        const emp = employees.find(e => e.id === employeeId);
+        asset.status = 'Issued';
+        asset.assignedTo = employeeId;
+        asset.issueDate = date;
+        asset.returnDate = '';
+        asset.history.push({
+            action: 'Issued',
+            to: emp ? `${emp.empId} - ${emp.name}` : employeeId,
+            employeeId: employeeId,
+            date: date,
+            remarks: remarks || 'Issued to employee'
+        });
+        showToast(`✅ Asset issued to ${emp ? emp.name : 'employee'}!`);
+    } 
+    else if (action === 'return') {
+        const previousEmp = asset.assignedTo;
+        const prevEmp = employees.find(e => e.id === previousEmp);
+        asset.status = 'Returned';
+        asset.returnDate = date;
+        asset.history.push({
+            action: 'Returned',
+            from: prevEmp ? `${prevEmp.empId} - ${prevEmp.name}` : previousEmp || 'Unknown',
+            date: date,
+            remarks: remarks || 'Returned from employee'
+        });
+        asset.assignedTo = '';
+        showToast('✅ Asset returned!');
+    } 
+    else if (action === 'transfer') {
+        if (!employeeId || !transferEmployeeId) {
+            showToast('⚠️ Please select both employees!', true);
+            return;
+        }
+        if (employeeId === transferEmployeeId) {
+            showToast('⚠️ Cannot transfer to the same employee!', true);
+            return;
+        }
+        const fromEmp = employees.find(e => e.id === employeeId);
+        const toEmp = employees.find(e => e.id === transferEmployeeId);
+        asset.status = 'Transferred';
+        asset.assignedTo = transferEmployeeId;
+        asset.history.push({
+            action: 'Transferred',
+            from: fromEmp ? `${fromEmp.empId} - ${fromEmp.name}` : employeeId,
+            to: toEmp ? `${toEmp.empId} - ${toEmp.name}` : transferEmployeeId,
+            fromId: employeeId,
+            toId: transferEmployeeId,
+            date: date,
+            remarks: remarks || `Transferred from ${fromEmp?.name || ''} to ${toEmp?.name || ''}`
+        });
+        showToast(`✅ Asset transferred from ${fromEmp?.name || ''} to ${toEmp?.name || ''}!`);
+    }
+
+    asset.updatedAt = new Date().toISOString();
+    await db.put('assets', asset);
+
+    closeAssignModal();
+    renderAssets();
+    updateStats();
+}
+
+function editAsset(id) {
+    openAssetModal(id);
+}
+
+async function deleteAsset(id) {
+    if (!confirm('⚠️ Delete this asset?')) return;
+    const asset = assets.find(a => a.id === id);
+    if (asset) {
+        await db.softDelete('assets', id);
+        const index = assets.findIndex(a => a.id === id);
+        if (index !== -1) assets.splice(index, 1);
+        showToast('🗑️ Asset moved to deleted records!');
+        renderAssets();
+        updateStats();
+    }
+}
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+function exportAssets() {
+    if (assets.length === 0) {
+        showToast('⚠️ No assets to export!', true);
+        return;
+    }
+    const data = assets.map(a => ({
+        'Asset Name': a.name,
+        'Category': a.category,
+        'Serial No': a.serialNo || '',
+        'Model': a.model || '',
+        'Status': a.status || 'Available',
+        'Assigned To': getEmployeeName(a.assignedTo),
+        'Issue Date': a.issueDate || '',
+        'Return Date': a.returnDate || '',
+        'Purchase Date': a.purchaseDate || '',
+        'Warranty Until': a.warrantyDate || '',
+        'Remarks': a.remarks || ''
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Assets');
+    XLSX.writeFile(wb, `Assets_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast(`✅ ${data.length} assets exported!`);
+}
+
+function importAssets(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+
+            if (!json.length) {
+                showToast('⚠️ No data found!', true);
+                return;
+            }
+
+            let imported = 0, errors = [];
+            for (const row of json) {
+                try {
+                    const name = (row['Asset Name'] || '').toString().trim();
+                    const category = (row['Category'] || '').toString().trim();
+                    if (!name || !category) {
+                        errors.push(`Row ${json.indexOf(row)+2}: Missing Name or Category`);
+                        continue;
+                    }
+
+                    const assignedName = (row['Assigned To'] || '').toString().trim();
+                    let assignedTo = '';
+                    if (assignedName) {
+                        const emp = employees.find(e => 
+                            e.name.toLowerCase().includes(assignedName.toLowerCase()) || 
+                            e.empId.toLowerCase() === assignedName.toLowerCase()
+                        );
+                        if (emp) assignedTo = emp.id;
+                    }
+
+                    const newAsset = {
+                        id: generateId(),
+                        name: name,
+                        category: category,
+                        serialNo: (row['Serial No'] || '').toString().trim(),
+                        model: (row['Model'] || '').toString().trim(),
+                        status: (row['Status'] || (assignedTo ? 'Issued' : 'Available')).toString().trim(),
+                        assignedTo: assignedTo,
+                        issueDate: row['Issue Date'] ? new Date(row['Issue Date']).toISOString().split('T')[0] : (assignedTo ? new Date().toISOString().split('T')[0] : ''),
+                        returnDate: row['Return Date'] ? new Date(row['Return Date']).toISOString().split('T')[0] : '',
+                        purchaseDate: row['Purchase Date'] ? new Date(row['Purchase Date']).toISOString().split('T')[0] : '',
+                        warrantyDate: row['Warranty Until'] ? new Date(row['Warranty Until']).toISOString().split('T')[0] : '',
+                        remarks: (row['Remarks'] || '').toString().trim(),
+                        history: [],
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    if (assignedTo) {
+                        const emp = employees.find(e => e.id === assignedTo);
+                        newAsset.history.push({
+                            action: 'Assigned',
+                            to: emp ? `${emp.empId} - ${emp.name}` : assignedName,
+                            employeeId: assignedTo,
+                            date: newAsset.issueDate || new Date().toISOString().split('T')[0],
+                            remarks: 'Imported from file'
+                        });
+                    }
+
+                    assets.push(newAsset);
+                    await db.put('assets', newAsset);
+                    imported++;
+                } catch(rowErr) {
+                    errors.push(`Row ${json.indexOf(row)+2}: ${rowErr.message}`);
+                }
+            }
+
+            let msg = `✅ ${imported} assets imported!`;
+            if (errors.length) msg += `\n${errors.slice(0,5).join('\n')}`;
+            showToast(msg, errors.length > 0);
+            renderAssets();
+            updateStats();
+        } catch(err) {
+            showToast('❌ Import failed: ' + err.message, true);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+async function selectFolder() {
+    const handle = await db.selectFolder();
+    if (handle) document.getElementById('folderLabel').textContent = handle.name;
+}
+
+async function manualSave() {
+    await db.triggerSync();
+    showToast('✅ Data saved!');
+}
+
+async function refreshData() {
+    await db.loadFromLocalStorage();
+    await loadAssets();
+    showToast('✅ Data refreshed!');
+}
+
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toast') || (function() {
+        const t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+        return t;
+    })();
+    const toastEl = document.getElementById('toast');
+    toastEl.textContent = message;
+    toastEl.className = 'toast' + (isError ? ' error' : '');
+    toastEl.style.display = 'block';
+    clearTimeout(toastEl._timer);
+    toastEl._timer = setTimeout(() => { toastEl.style.display = 'none'; }, 3000);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    const savedFolder = sessionStorage.getItem('skymed_folder');
+    if (savedFolder) document.getElementById('folderLabel').textContent = savedFolder;
+    await db.loadFromLocalStorage();
+    await loadAssets();
+    setInterval(async () => {
+        await db.loadFromLocalStorage();
+        await loadAssets();
+    }, 60000);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center;padding:10px 20px;font-size:.7rem;color:#7a8fa5;border-top:1px solid #eef3f9;margin-top:16px;';
+    footer.innerHTML = `
+        <i class="fas fa-code"></i> Developed by 
+        <a href="https://www.linkedin.com/in/ram-kumar-60072454/" target="_blank" style="color:#1a5cff;text-decoration:none;font-weight:600;">
+            Ram Kumar
+        </a>
+        &nbsp;|&nbsp;
+        <i class="fas fa-phone"></i> +91-9736438856
+    `;
+    document.querySelector('.main').appendChild(footer);
+});
+</script>
+</body>
+</html>
