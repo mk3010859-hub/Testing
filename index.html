@@ -111,7 +111,7 @@
 <script>
     (function() {
         if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
-            window.location.href = 'App/login.html';
+            window.location.href = 'login.html';
         }
     })();
 
@@ -292,7 +292,7 @@
     </div>
 </div>
 
-<script src="App/db.js"></script>
+<script src="db.js"></script>
 <script>
 let allVendors = [], allContracts = [], allReceivables = [], allPayables = [];
 let filteredReceivables = [], filteredPayables = [];
