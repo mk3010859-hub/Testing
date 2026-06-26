@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyMed Pro - Receivables</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="security.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+        body{background:#eef2f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:#0b2a4a;color:#fff;padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+        .sidebar .logo{padding:0 20px 20px;font-size:1.2rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sidebar .logo i{color:#7bc5f5}
+        .sidebar .logo small{font-size:.6rem;opacity:.6;font-weight:400;display:block}
+        .sidebar .nav{padding:15px 0;flex:1}
+        .sidebar .nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;border-left:3px solid transparent}
+        .sidebar .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .sidebar .nav a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .sidebar .nav a i{width:20px;text-align:center}
+        .sidebar .user{padding:15px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.8rem;display:flex;align-items:center;gap:10px}
+        .sidebar .user .name{font-weight:600}
+        .sidebar .user .role{font-size:.65rem;opacity:.6}
+        .sidebar .folder-info{padding:8px 20px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.7rem;opacity:.8}
+        .sidebar .folder-info:hover{opacity:1;background:rgba(255,255,255,.05)}
+        .sidebar .folder-info i{margin-right:6px}
+        .sidebar .folder-info .sub{font-size:.6rem;opacity:.5;display:block;margin-top:2px}
+        
+        .nav-group{position:relative}
+        .nav-group-header{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;cursor:pointer;border-left:3px solid transparent}
+        .nav-group-header:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-group-header.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub{padding-left:20px;max-height:0;overflow:hidden;transition:max-height .3s ease}
+        .nav-sub.open{max-height:300px}
+        .nav-sub a{display:flex;align-items:center;gap:12px;padding:8px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.78rem;transition:.2s;border-left:3px solid transparent}
+        .nav-sub a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-sub a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub a i{width:20px;text-align:center;font-size:.7rem}
+        
+        .main{flex:1;padding:20px 24px;overflow-y:auto;max-height:100vh}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+        .header h1{font-size:1.4rem;color:#1a3a5a}
+        .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .btn{padding:6px 16px;border:none;border-radius:30px;cursor:pointer;font-size:.8rem;transition:.2s;display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600}
+        .btn-primary{background:#2a6b9e;color:#fff}
+        .btn-primary:hover{background:#1e4f77}
+        .btn-success{background:#1e8b5c;color:#fff}
+        .btn-success:hover{background:#156a45}
+        .btn-warning{background:#d48a2e;color:#fff}
+        .btn-warning:hover{background:#b87a22}
+        .btn-danger{background:#c44545;color:#fff}
+        .btn-danger:hover{background:#a13232}
+        .btn-outline{background:transparent;border:1px solid #dce4ed;color:#3a5a7a}
+        .btn-outline:hover{background:#f5f8fc}
+        .btn-sm{padding:3px 10px;font-size:.7rem}
+        .btn-logout{background:#c44545;color:#fff;border:none;padding:6px 16px;border-radius:30px;cursor:pointer;font-size:.8rem;display:inline-flex;align-items:center;gap:5px;transition:.2s;font-weight:600}
+        .btn-logout:hover{background:#a13232;transform:scale(1.02)}
+        
+        .filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:#f7faff;border-radius:12px;border:1px solid #e8edf5;margin-bottom:16px}
+        .filter-bar label{font-size:.75rem;font-weight:600;color:#3a5a7a}
+        .filter-bar select,.filter-bar input{padding:5px 14px;border-radius:30px;border:1px solid #dce4ed;background:#fff;font-size:.75rem}
+        .filter-bar select:focus,.filter-bar input:focus{outline:0;border-color:#2a6b9e}
+        .filter-bar .date-group{display:flex;gap:4px;align-items:center}
+        .filter-bar .date-group input{padding:4px 10px;width:130px}
+        .filter-bar .filter-actions{display:flex;gap:4px;flex-wrap:wrap}
+        .filter-bar .filter-actions .btn{padding:4px 14px;font-size:.7rem}
+        
+        .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8edf5;height:calc(100vh - 300px);overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:1400px}
+        th{background:#f5f8fc;padding:8px 10px;text-align:left;font-weight:700;color:#3a5a7a;position:sticky;top:0;z-index:2;border-bottom:2px solid #e0e7ef;white-space:nowrap}
+        td{padding:6px 10px;border-bottom:1px solid #eef3f9}
+        tr:hover td{background:#f7faff}
+        .badge{display:inline-block;padding:1px 10px;border-radius:30px;font-size:.6rem;font-weight:700}
+        .badge-success{background:#dff0e8;color:#1a6a4a}
+        .badge-warning{background:#fdf0e0;color:#a87020}
+        .badge-danger{background:#fce8e8;color:#a84040}
+        .badge-info{background:#ddeaf5;color:#1a5a7a}
+        .badge-purple{background:#e8dff5;color:#5a3a7a}
+        
+        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:#fff;border-radius:16px;padding:24px;max-width:750px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+        .modal-box h3{margin-bottom:16px;color:#1a3a5a;display:flex;align-items:center;gap:10px;font-size:1.1rem}
+        .modal-box h3 i{color:#2a6b9e}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .form-grid .full{grid-column:1/-1}
+        .form-grid label{font-size:.72rem;font-weight:600;color:#3a5a7a;display:block;margin-bottom:3px}
+        .form-grid input,.form-grid select{width:100%;padding:6px 10px;border:1px solid #dce4ed;border-radius:6px;font-size:.78rem}
+        .form-grid input:focus,.form-grid select:focus{outline:0;border-color:#2a6b9e}
+        .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;padding-top:16px;border-top:1px solid #eef3f9}
+        .modal-actions .btn{padding:8px 24px}
+        .empty-state{text-align:center;padding:30px;color:#7a8fa5}
+        .empty-state i{font-size:1.6rem;opacity:.3;display:block;margin-bottom:8px}
+        .moved-badge{background:#e8f8f0;color:#1a6a4a;border:1px solid #1e8b5c;padding:1px 8px;border-radius:30px;font-size:.55rem}
+        
+        .summary-footer{display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid #eef3f9;font-size:.78rem}
+        .summary-footer .total{font-weight:700}
+        .summary-footer .total .amount{color:#1a5cff}
+        
+        @media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .logo small,.sidebar .nav a span,.sidebar .user .name,.sidebar .user .role,.sidebar .folder-info span{display:none}.sidebar .nav a{padding:10px 18px;justify-content:center}.sidebar .folder-info .sub{display:none}.main{padding:12px}.form-grid{grid-template-columns:1fr 1fr}.filter-bar{flex-direction:column;align-items:stretch}}
+        @media(max-width:480px){.form-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+
+<script>
+    (function() {
+        if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    })();
+
+    function logoutUser() {
+        if (confirm('⚠️ Are you sure you want to logout?')) {
+            sessionStorage.removeItem('skymed_logged_in');
+            sessionStorage.removeItem('skymed_login_time');
+            window.location.href = 'login.html';
+        }
+    }
+</script>
+
+<div class="sidebar">
+    <div class="logo">
+        <i class="fas fa-notes-medical"></i> <span>SkyMed</span>
+        <small>v6.0</small>
+    </div>
+<div class="nav">
+    <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+    <a href="master.html" class="active"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+    <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+    <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+    
+    <div class="nav-group">
+        <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+            <i class="fas fa-coins"></i> <span>Finance</span>
+            <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+        </div>
+        <div class="nav-sub" id="financeSub">
+            <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+            <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+            <a href="advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+            <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+        </div>
+    </div>
+    
+    <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+    <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+   <a href="assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        <a href="imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
+    <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+    <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+</div>
+    <div class="folder-info" onclick="selectFolder()">
+        <i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span>
+        <span class="sub">Click to choose folder</span>
+    </div>
+    <div class="user">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;opacity:.7;"></i>
+        <div><span class="name">Admin</span><br><span class="role">Administrator</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <h1><i class="fas fa-arrow-right" style="color:#1e8b5c;"></i> Receivables</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="openModal()"><i class="fas fa-plus"></i> Add</button>
+            <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-primary" onclick="exportReceivables()"><i class="fas fa-file-excel"></i> Export</button>
+            <button class="btn btn-outline" onclick="document.getElementById('csvUpload').click()"><i class="fas fa-upload"></i> Import</button>
+            <button class="btn btn-outline" onclick="manualSave()"><i class="fas fa-save"></i> Save</button>
+            <!-- ❌ LOGOUT BUTTON HATAYA -->
+            <input type="file" id="csvUpload" accept=".csv,.xlsx" style="display:none" onchange="importReceivables(event)">
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <label><i class="fas fa-calendar"></i> Period:</label>
+        <select id="periodFilter" onchange="toggleCustomDate()">
+            <option value="all">📊 All Records</option>
+            <option value="this-year">📅 This Year</option>
+            <option value="last-quarter">📅 Last Quarter</option>
+            <option value="6-months">📅 Last 6 Months</option>
+            <option value="custom">📅 Custom Range</option>
+        </select>
+        
+        <div class="date-group" id="customDateGroup" style="display:none;">
+            <label>From:</label>
+            <input type="date" id="dateFrom">
+            <label>To:</label>
+            <input type="date" id="dateTo">
+        </div>
+        
+        <label>Status:</label>
+        <select id="statusFilter" onchange="renderReceivables()">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="received">Received</option>
+        </select>
+        
+        <label>Vendor:</label>
+        <select id="filterVendor" onchange="renderReceivables()">
+            <option value="">All Vendors</option>
+        </select>
+        
+        <div class="filter-actions">
+            <button class="btn btn-primary btn-sm" onclick="applyFilters()"><i class="fas fa-filter"></i> Apply</button>
+            <button class="btn btn-outline btn-sm" onclick="resetFilters()"><i class="fas fa-undo-alt"></i> Reset</button>
+            <button class="btn btn-success btn-sm" onclick="downloadFilteredData()"><i class="fas fa-file-excel"></i> Download</button>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Vendor</th>
+                    <th>Location</th>
+                    <th>Invoice</th>
+                    <th>Month-Year</th>
+                    <th>Count</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                    <th>GST%</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Received On</th>
+                    <th>UTR</th>
+                    <th>Source</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="receivableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+        <h3 id="modalTitle"><i class="fas fa-plus"></i> Add Receivable</h3>
+        <div id="modalBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-success" id="modalSaveBtn" onclick="saveReceivable()"><i class="fas fa-save"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<script src="db.js"></script>
+<script>
+// ============================================================
+// SIDEBAR SUB-MENU TOGGLE
+// ============================================================
+function toggleSubMenu(id) {
+    const sub = document.getElementById(id);
+    const arrow = document.getElementById(id + 'Arrow');
+    if (!sub) return;
+    sub.classList.toggle('open');
+    if (arrow) {
+        arrow.style.transform = sub.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const financeSub = document.getElementById('financeSub');
+    if (financeSub) {
+        const hasActive = financeSub.querySelector('a.active');
+        if (hasActive) {
+            financeSub.classList.add('open');
+            const arrow = document.getElementById('financeArrow');
+            if (arrow) arrow.style.transform = 'rotate(180deg)';
+        }
+    }
+});
+
+// ============================================================
+// DATA
+// ============================================================
+let vendors = [], locations = [], receivables = [], editId = null;
+let dataLoaded = false;
+
+function getMonthYear(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return months[d.getMonth()] + '-' + d.getFullYear().toString().slice(-2);
+    } catch(e) {
+        return '';
+    }
+}
+
+function toggleCustomDate() {
+    const val = document.getElementById('periodFilter').value;
+    document.getElementById('customDateGroup').style.display = val === 'custom' ? 'flex' : 'none';
+    if (val !== 'custom') applyFilters();
+}
+
+function getDateRange() {
+    const period = document.getElementById('periodFilter').value;
+    const now = new Date();
+    let from, to = new Date();
+    
+    switch(period) {
+        case 'all':
+            return null;
+        case 'this-year':
+            from = new Date(now.getFullYear(), 0, 1);
+            break;
+        case 'last-quarter':
+            const q = Math.floor((now.getMonth() - 3) / 3);
+            const qYear = now.getFullYear() + (q < 0 ? -1 : 0);
+            const qMonth = ((q % 3) + 3) % 3;
+            from = new Date(qYear, qMonth * 3, 1);
+            break;
+        case '6-months':
+            from = new Date(now);
+            from.setMonth(now.getMonth() - 6);
+            break;
+        case 'custom':
+            const fromVal = document.getElementById('dateFrom').value;
+            const toVal = document.getElementById('dateTo').value;
+            if (fromVal && toVal) {
+                from = new Date(fromVal);
+                to = new Date(toVal);
+            } else {
+                from = new Date(now);
+                from.setMonth(now.getMonth() - 1);
+            }
+            break;
+        default:
+            from = new Date(now);
+            from.setMonth(now.getMonth() - 1);
+    }
+    return { from, to };
+}
+
+function populateFilters() {
+    const vendorSel = document.getElementById('filterVendor');
+    const current = vendorSel.value;
+    vendorSel.innerHTML = '<option value="">All Vendors</option>';
+    vendors.forEach(v => {
+        vendorSel.innerHTML += `<option value="${v.code}">${v.code} - ${v.name}</option>`;
+    });
+    if (current) vendorSel.value = current;
+}
+
+async function loadReceivables() {
+    try {
+        vendors = await db.getAll('vendors') || [];
+        locations = await db.getAll('contracts') || [];
+        receivables = await db.getAll('receivables') || [];
+        dataLoaded = true;
+        populateFilters();
+        applyFilters();
+        console.log('📊 Receivables loaded:', receivables.length);
+    } catch(e) {
+        console.error('Load failed:', e);
+        setTimeout(loadReceivables, 1000);
+    }
+}
+
+function applyFilters() {
+    renderReceivables();
+}
+
+function resetFilters() {
+    document.getElementById('periodFilter').value = 'all';
+    document.getElementById('statusFilter').value = 'all';
+    document.getElementById('filterVendor').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('customDateGroup').style.display = 'none';
+    applyFilters();
+}
+
+function renderReceivables() {
+    if (!dataLoaded) return;
+    
+    const dateRange = getDateRange();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const vendorFilter = document.getElementById('filterVendor').value;
+
+    let data = receivables;
+    if (dateRange) {
+        data = data.filter(r => {
+            const date = new Date(r.date || r.createdAt || Date.now());
+            return date >= dateRange.from && date <= dateRange.to;
+        });
+    }
+    if (statusFilter !== 'all') {
+        data = data.filter(r => {
+            if (statusFilter === 'pending') return r.status !== 'Received' && r.status !== 'Paid';
+            if (statusFilter === 'received') return r.status === 'Received';
+            return true;
+        });
+    }
+    if (vendorFilter) {
+        data = data.filter(r => r.vendorCode === vendorFilter);
+    }
+
+    const tbody = document.getElementById('receivableBody');
+    let totalSum = 0;
+    
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="14" class="empty-state"><i class="fas fa-inbox"></i>No receivables found</td></tr>';
+        document.getElementById('totalAmount').textContent = 'Total: ₹0';
+        return;
+    }
+
+    let html = '';
+    data.forEach(r => {
+        const amt = parseFloat(r.amount) || 0;
+        const gst = parseFloat(r.gst) || 0;
+        const total = amt + (amt * gst / 100);
+        totalSum += total;
+        const statusBadge = r.status === 'Received' ? 'badge-success' : 'badge-warning';
+        const source = r.entryId ? '<span class="moved-badge">From General</span>' : '<span class="moved-badge" style="background:#ddeaf5;border-color:#2a6b9e;">Manual</span>';
+        const monthYear = r.monthYear || getMonthYear(r.date) || '-';
+        
+        html += `<tr>
+            <td><strong>${r.vendorName || '-'}</strong></td>
+            <td><span class="badge badge-info">${r.base || '-'}</span></td>
+            <td>${r.invoice || '-'}</td>
+            <td><span class="badge badge-purple">${monthYear}</span></td>
+            <td><strong>${r.count || 0}</strong></td>
+            <td>${formatCurrency(r.rate || 0)}</td>
+            <td>${formatCurrency(amt)}</td>
+            <td>${gst}%</td>
+            <td><strong>${formatCurrency(total)}</strong></td>
+            <td><span class="badge ${statusBadge}">${r.status || 'Pending'}</span></td>
+            <td>${r.receivedOn || '-'}</td>
+            <td style="font-size:.7rem;">${r.utr || '-'}</td>
+            <td>${source}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="editReceivable('${r.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="deleteReceivable('${r.id}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+    document.getElementById('totalAmount').textContent = `Total: ${formatCurrency(totalSum)}`;
+}
+
+function openModal() {
+    editId = null;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Add Receivable';
+    document.getElementById('modalSaveBtn').style.display = 'inline-flex';
+    let vendorOpts = '<option value="">Select Vendor</option>';
+    vendors.forEach(v => { vendorOpts += `<option value="${v.code}">${v.code} - ${v.name}</option>`; });
+
+    const now = new Date();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const defaultMonthYear = months[now.getMonth()] + '-' + now.getFullYear().toString().slice(-2);
+
+    document.getElementById('modalBody').innerHTML = `
+        <div class="form-grid">
+            <div><label>Vendor *</label><select id="f_vendorCode" onchange="updateBases()">${vendorOpts}</select></div>
+            <div><label>Location/Base *</label><select id="f_base" onchange="updateRate()"><option value="">Select base</option></select></div>
+            <div><label>Invoice # *</label><input id="f_invoice" placeholder="Invoice number"></div>
+            <div><label>Month-Year</label><input id="f_monthYear" placeholder="e.g., Jun-26" value="${defaultMonthYear}"></div>
+            <div><label>Count / Quantity</label><input id="f_count" type="number" step="0.01" value="1" oninput="calcAmount()"></div>
+            <div><label>Rate (₹)</label><input id="f_rate" type="number" step="0.01" readonly style="background:#f5f8fc;"></div>
+            <div><label>Rate Type</label><input id="f_rateType" readonly style="background:#f5f8fc;"></div>
+            <div><label>Amount (excl GST)</label><input id="f_amount_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="₹0.00"><input type="hidden" id="f_amount" value="0"></div>
+            <div><label>GST %</label><select id="f_gst" onchange="calcAmount()">
+                <option value="0">0%</option><option value="5">5%</option><option value="12">12%</option>
+                <option value="18" selected>18%</option><option value="28">28%</option>
+            </select></div>
+            <div><label>Total (incl GST)</label><input id="f_total_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="₹0.00"></div>
+            <div><label>Status</label><select id="f_status"><option value="Pending">Pending</option><option value="Received">Received</option></select></div>
+            <div><label>Received On</label><input id="f_receivedOn" type="date"></div>
+            <div><label>UTR Number</label><input id="f_utr" placeholder="UTR number"></div>
+            <div class="full"><label>Due Date (auto-calculated)</label><input id="f_due" type="date" readonly style="background:#f5f8fc;"></div>
+        </div>
+    `;
+    document.getElementById('modalOverlay').classList.add('active');
+    setTimeout(updateBases, 100);
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    editId = null;
+}
+
+function updateBases() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    const baseSelect = document.getElementById('f_base');
+    baseSelect.innerHTML = '<option value="">Select base</option>';
+    if (vendorCode) {
+        const locs = locations.filter(l => l.vendorCode === vendorCode);
+        locs.forEach(l => { baseSelect.innerHTML += `<option value="${l.base}">${l.base}</option>`; });
+    }
+    updateRate();
+}
+
+function updateRate() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    const base = document.getElementById('f_base').value;
+    if (vendorCode && base) {
+        const loc = locations.find(l => l.vendorCode === vendorCode && l.base === base);
+        if (loc) {
+            document.getElementById('f_rate').value = loc.rate || 0;
+            document.getElementById('f_rateType').value = loc.rateType || 'Fixed';
+            document.getElementById('f_gst').value = loc.gst || 18;
+            const vendor = vendors.find(v => v.code === vendorCode);
+            const period = vendor ? vendor.paymentPeriod : 30;
+            const today = new Date();
+            today.setDate(today.getDate() + period);
+            document.getElementById('f_due').value = today.toISOString().split('T')[0];
+            calcAmount();
+            return;
+        }
+    }
+    document.getElementById('f_rate').value = 0;
+    document.getElementById('f_rateType').value = 'Fixed';
+    document.getElementById('f_due').value = '';
+    calcAmount();
+}
+
+function calcAmount() {
+    const rate = parseFloat(document.getElementById('f_rate').value) || 0;
+    const count = parseFloat(document.getElementById('f_count').value) || 0;
+    const gst = parseFloat(document.getElementById('f_gst').value) || 0;
+    const amount = Math.round((rate * count) * 100) / 100;
+    const total = Math.round((amount + (amount * gst / 100)) * 100) / 100;
+    document.getElementById('f_amount').value = amount;
+    document.getElementById('f_amount_display').value = `₹${amount.toFixed(2)}`;
+    document.getElementById('f_total_display').value = `₹${total.toFixed(2)}`;
+}
+
+async function saveReceivable() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    if (!vendorCode) { alert('Please select a vendor!'); return; }
+    const base = document.getElementById('f_base').value;
+    if (!base) { alert('Please select a location!'); return; }
+    const invoice = document.getElementById('f_invoice').value.trim();
+    if (!invoice) { alert('Invoice is required!'); return; }
+    const exists = receivables.some(r => r.vendorCode === vendorCode && r.invoice === invoice && r.id !== editId);
+    if (exists) { alert('⚠️ This invoice already exists!'); return; }
+
+    const vendor = vendors.find(v => v.code === vendorCode);
+    const amount = parseFloat(document.getElementById('f_amount').value) || 0;
+    const rate = parseFloat(document.getElementById('f_rate').value) || 0;
+    const count = parseFloat(document.getElementById('f_count').value) || 0;
+    
+    let monthYear = document.getElementById('f_monthYear').value.trim();
+    if (!monthYear) {
+        const now = new Date();
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        monthYear = months[now.getMonth()] + '-' + now.getFullYear().toString().slice(-2);
+    }
+    
+    const data = {
+        id: editId || generateId(),
+        vendorCode: vendorCode,
+        vendorName: vendor ? vendor.name : '',
+        base: base,
+        invoice: invoice,
+        monthYear: monthYear,
+        count: count,
+        rate: rate,
+        rateType: document.getElementById('f_rateType').value || 'Fixed',
+        amount: amount,
+        gst: parseInt(document.getElementById('f_gst').value) || 18,
+        status: document.getElementById('f_status').value || 'Pending',
+        date: new Date().toISOString().split('T')[0],
+        dueDate: document.getElementById('f_due').value || '',
+        receivedOn: document.getElementById('f_receivedOn').value || '',
+        utr: document.getElementById('f_utr').value || '',
+        serviceCategory: 'Other',
+        entryId: null
+    };
+
+    if (editId) {
+        const existing = receivables.find(r => r.id === editId);
+        if (existing) Object.assign(existing, data);
+        await db.put('receivables', data);
+    } else {
+        await db.put('receivables', data);
+    }
+    
+    await db.addToMaster(data, 'Receivable');
+
+    closeModal();
+    await loadReceivables();
+    await db.triggerSync();
+    alert('✅ Receivable saved!');
+}
+
+async function editReceivable(id) {
+    const rec = receivables.find(r => r.id === id);
+    if (!rec) return;
+    editId = id;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Receivable';
+    let vendorOpts = '<option value="">Select Vendor</option>';
+    vendors.forEach(v => { vendorOpts += `<option value="${v.code}" ${v.code === rec.vendorCode ? 'selected' : ''}>${v.code} - ${v.name}</option>`; });
+    let baseOpts = '<option value="">Select base</option>';
+    const locs = locations.filter(l => l.vendorCode === rec.vendorCode);
+    locs.forEach(l => { baseOpts += `<option value="${l.base}" ${l.base === rec.base ? 'selected' : ''}>${l.base}</option>`; });
+
+    const monthYear = rec.monthYear || getMonthYear(rec.date) || '';
+
+    document.getElementById('modalBody').innerHTML = `
+        <div class="form-grid">
+            <div><label>Vendor</label><select id="f_vendorCode" onchange="updateBases()">${vendorOpts}</select></div>
+            <div><label>Location/Base</label><select id="f_base" onchange="updateRate()">${baseOpts}</select></div>
+            <div><label>Invoice #</label><input id="f_invoice" value="${rec.invoice || ''}"></div>
+            <div><label>Month-Year</label><input id="f_monthYear" value="${monthYear}" placeholder="e.g., Jun-26"></div>
+            <div><label>Count</label><input id="f_count" type="number" step="0.01" value="${rec.count || 1}" oninput="calcAmount()"></div>
+            <div><label>Rate</label><input id="f_rate" type="number" step="0.01" value="${rec.rate || 0}" readonly></div>
+            <div><label>Rate Type</label><input id="f_rateType" value="${rec.rateType || 'Fixed'}" readonly></div>
+            <div><label>Amount (excl GST)</label><input id="f_amount_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="${formatCurrency(rec.amount || 0)}"><input type="hidden" id="f_amount" value="${rec.amount || 0}"></div>
+            <div><label>GST %</label><select id="f_gst" onchange="calcAmount()">
+                <option value="0" ${rec.gst == 0 ? 'selected' : ''}>0%</option>
+                <option value="5" ${rec.gst == 5 ? 'selected' : ''}>5%</option>
+                <option value="12" ${rec.gst == 12 ? 'selected' : ''}>12%</option>
+                <option value="18" ${rec.gst == 18 ? 'selected' : ''}>18%</option>
+                <option value="28" ${rec.gst == 28 ? 'selected' : ''}>28%</option>
+            </select></div>
+            <div><label>Total (incl GST)</label><input id="f_total_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="${formatCurrency((rec.amount || 0) + ((rec.amount || 0) * (rec.gst || 0) / 100))}"></div>
+            <div><label>Status</label><select id="f_status"><option value="Pending" ${rec.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Received" ${rec.status === 'Received' ? 'selected' : ''}>Received</option></select></div>
+            <div><label>Received On</label><input id="f_receivedOn" type="date" value="${rec.receivedOn || ''}"></div>
+            <div><label>UTR</label><input id="f_utr" value="${rec.utr || ''}"></div>
+            <div class="full"><label>Due Date</label><input id="f_due" type="date" value="${rec.dueDate || ''}" readonly></div>
+        </div>
+    `;
+    document.getElementById('modalOverlay').classList.add('active');
+    setTimeout(() => { updateBases(); calcAmount(); }, 100);
+}
+
+async function deleteReceivable(id) {
+    if (!confirm('Delete this receivable?')) return;
+    await db.softDelete('receivables', id);
+    const rec = receivables.find(r => r.id === id);
+    if (rec) {
+        const masters = await db.getAll('master') || [];
+        const toDelete = masters.filter(m => m.vendorCode === rec.vendorCode && m.invoice === rec.invoice);
+        for (const m of toDelete) { await db.softDelete('master', m.id); }
+    }
+    await loadReceivables();
+    await db.triggerSync();
+    alert('✅ Receivable moved to deleted records!');
+}
+
+function downloadFilteredData() {
+    const dateRange = getDateRange();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const vendorFilter = document.getElementById('filterVendor').value;
+
+    let data = receivables;
+    if (dateRange) {
+        data = data.filter(r => {
+            const date = new Date(r.date || r.createdAt || Date.now());
+            return date >= dateRange.from && date <= dateRange.to;
+        });
+    }
+    if (statusFilter !== 'all') {
+        data = data.filter(r => {
+            if (statusFilter === 'pending') return r.status !== 'Received' && r.status !== 'Paid';
+            if (statusFilter === 'received') return r.status === 'Received';
+            return true;
+        });
+    }
+    if (vendorFilter) {
+        data = data.filter(r => r.vendorCode === vendorFilter);
+    }
+    if (data.length === 0) {
+        alert('❌ No data to download!');
+        return;
+    }
+    const exportData = data.map(r => ({
+        'Vendor': r.vendorName || '',
+        'Location': r.base || '',
+        'Invoice': r.invoice || '',
+        'Month-Year': r.monthYear || getMonthYear(r.date) || '',
+        'Count': r.count || 0,
+        'Rate': r.rate || 0,
+        'Amount': r.amount || 0,
+        'GST%': r.gst || 0,
+        'Total': (r.amount || 0) + ((r.amount || 0) * (r.gst || 0) / 100),
+        'Status': r.status || 'Pending',
+        'Received On': r.receivedOn || '',
+        'UTR': r.utr || '',
+        'Date': r.date || ''
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Receivables');
+    XLSX.writeFile(wb, `Receivables_${new Date().toISOString().slice(0,10)}.xlsx`);
+    alert(`✅ ${data.length} records downloaded!`);
+}
+
+async function exportReceivables() { 
+    await db.exportCSV('receivables'); 
+}
+
+async function importReceivables(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (typeof XLSX === 'undefined') {
+        alert('❌ XLSX library not loaded!');
+        event.target.value = '';
+        return;
+    }
+
+    try {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const ws = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true });
+
+                if (jsonData.length === 0) {
+                    alert('❌ No data found in the file!');
+                    event.target.value = '';
+                    return;
+                }
+                
+                let imported = 0, errors = [];
+
+                for (let i = 0; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    try {
+                        let vendorCode = row['vendorCode'] || row['VendorCode'] || row['Vendor Code'] || '';
+                        if (!vendorCode) {
+                            errors.push(`Row ${i+2}: Missing vendorCode`);
+                            continue;
+                        }
+
+                        const vendor = vendors.find(v => v.code === vendorCode);
+                        if (!vendor) {
+                            errors.push(`Row ${i+2}: Vendor "${vendorCode}" not found!`);
+                            continue;
+                        }
+
+                        let invoice = row['invoice'] || row['Invoice'] || '';
+                        if (!invoice) {
+                            errors.push(`Row ${i+2}: Missing invoice`);
+                            continue;
+                        }
+
+                        const exists = receivables.some(r => r.vendorCode === vendorCode && r.invoice === invoice);
+                        if (exists) {
+                            errors.push(`Row ${i+2}: Invoice "${invoice}" already exists`);
+                            continue;
+                        }
+
+                        let count = parseFloat(row['count'] || row['Count'] || 0);
+                        if (isNaN(count) || count < 0) count = 0;
+
+                        let rate = parseFloat(row['rate'] || row['Rate'] || 0);
+                        if (isNaN(rate) || rate < 0) rate = 0;
+
+                        let amount = parseFloat(row['amount'] || row['Amount'] || 0);
+                        if (isNaN(amount) || amount < 0) {
+                            amount = Math.round((rate * count) * 100) / 100;
+                        }
+
+                        let gst = parseFloat(row['gst'] || row['Gst'] || row['GST'] || 18);
+                        if (isNaN(gst) || gst < 0) gst = 18;
+                        if (gst > 0 && gst < 1) gst = Math.round(gst * 100);
+
+                        let status = row['status'] || row['Status'] || 'Pending';
+                        status = status.trim();
+                        if (status !== 'Pending' && status !== 'Received') status = 'Pending';
+
+                        let monthYear = row['monthYear'] || row['MonthYear'] || row['Month-Year'] || '';
+                        if (!monthYear) {
+                            let dateVal = row['date'] || row['Date'] || '';
+                            if (dateVal) {
+                                try {
+                                    if (typeof dateVal === 'number') {
+                                        const excelEpoch = new Date(1899, 11, 30);
+                                        dateVal = new Date(excelEpoch.getTime() + dateVal * 86400000);
+                                        dateVal = dateVal.toISOString().split('T')[0];
+                                    } else {
+                                        dateVal = new Date(dateVal).toISOString().split('T')[0];
+                                    }
+                                } catch(e) { dateVal = ''; }
+                            }
+                            monthYear = getMonthYear(dateVal);
+                        }
+
+                        let date = row['date'] || row['Date'] || new Date().toISOString().split('T')[0];
+                        if (date) {
+                            try {
+                                if (typeof date === 'number') {
+                                    const excelEpoch = new Date(1899, 11, 30);
+                                    date = new Date(excelEpoch.getTime() + date * 86400000);
+                                    date = date.toISOString().split('T')[0];
+                                } else {
+                                    date = new Date(date).toISOString().split('T')[0];
+                                }
+                            } catch(e) { date = new Date().toISOString().split('T')[0]; }
+                        }
+
+                        let dueDate = row['dueDate'] || row['DueDate'] || '';
+                        if (dueDate) {
+                            try {
+                                if (typeof dueDate === 'number') {
+                                    const excelEpoch = new Date(1899, 11, 30);
+                                    dueDate = new Date(excelEpoch.getTime() + dueDate * 86400000);
+                                    dueDate = dueDate.toISOString().split('T')[0];
+                                } else {
+                                    dueDate = new Date(dueDate).toISOString().split('T')[0];
+                                }
+                            } catch(e) { dueDate = ''; }
+                        }
+
+                        let receivedOn = row['receivedOn'] || row['ReceivedOn'] || '';
+                        if (receivedOn) {
+                            try {
+                                if (typeof receivedOn === 'number') {
+                                    const excelEpoch = new Date(1899, 11, 30);
+                                    receivedOn = new Date(excelEpoch.getTime() + receivedOn * 86400000);
+                                    receivedOn = receivedOn.toISOString().split('T')[0];
+                                } else {
+                                    receivedOn = new Date(receivedOn).toISOString().split('T')[0];
+                                }
+                            } catch(e) { receivedOn = ''; }
+                        }
+
+                        let utr = row['utr'] || row['Utr'] || row['UTR'] || '';
+                        let base = row['base'] || row['Base'] || row['Location'] || '';
+                        let rateType = row['rateType'] || row['RateType'] || 'Fixed';
+                        let serviceCategory = row['serviceCategory'] || row['ServiceCategory'] || 'Other';
+
+                        const record = {
+                            id: generateId(),
+                            vendorCode: vendorCode,
+                            vendorName: vendor ? vendor.name : '',
+                            base: base || '',
+                            invoice: invoice,
+                            monthYear: monthYear || '',
+                            count: count,
+                            rate: rate,
+                            rateType: rateType,
+                            amount: amount,
+                            gst: gst,
+                            status: status,
+                            date: date,
+                            dueDate: dueDate || '',
+                            receivedOn: receivedOn || '',
+                            utr: utr || '',
+                            serviceCategory: serviceCategory || 'Other',
+                            entryId: null,
+                            importedAt: new Date().toISOString()
+                        };
+
+                        await db.put('receivables', record);
+                        await db.addToMaster(record, 'Receivable');
+                        imported++;
+                    } catch(rowError) {
+                        errors.push(`Row ${i+2}: ${rowError.message}`);
+                    }
+                }
+
+                await db.triggerSync();
+                await loadReceivables();
+                
+                let msg = `✅ ${imported} records imported successfully!`;
+                if (errors.length > 0) msg += `\n\nErrors:\n${errors.slice(0, 10).join('\n')}`;
+                alert(msg);
+            } catch(err) {
+                alert('❌ Import failed: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    } catch(err) {
+        alert('❌ File read error: ' + err.message);
+    }
+    event.target.value = '';
+}
+
+async function selectFolder() {
+    const handle = await db.selectFolder();
+    if (handle) document.getElementById('folderLabel').textContent = handle.name;
+}
+
+async function manualSave() {
+    await db.triggerSync();
+    alert('✅ Data saved!');
+}
+
+async function refreshData() {
+    await db.loadFromLocalStorage();
+    await loadReceivables();
+    alert('✅ Data refreshed!');
+}
+window.refreshData = refreshData;
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const savedFolder = sessionStorage.getItem('skymed_folder');
+    if (savedFolder) document.getElementById('folderLabel').textContent = savedFolder;
+    await db.loadFromLocalStorage();
+    await loadReceivables();
+    setInterval(async () => {
+        await db.loadFromLocalStorage();
+        await loadReceivables();
+    }, 60000);
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+});
+
+// Footer
+document.addEventListener('DOMContentLoaded', function() {
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center;padding:10px 20px;font-size:.7rem;color:#7a8fa5;border-top:1px solid #eef3f9;margin-top:16px;';
+    footer.innerHTML = `
+        <i class="fas fa-code"></i> Developed by 
+        <a href="https://www.linkedin.com/in/ram-kumar-60072454/" target="_blank" style="color:#1a5cff;text-decoration:none;font-weight:600;">
+            Ram Kumar
+        </a>
+        &nbsp;|&nbsp;
+        <i class="fas fa-phone"></i> +91-9736438856
+    `;
+    document.querySelector('.main').appendChild(footer);
+});
+</script>
+</body>
+</html>

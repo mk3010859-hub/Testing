@@ -3,263 +3,658 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpiceJet SkyMed - Medical Inventory</title>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <title>SkyMed Pro - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="App/security.js"></script>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;padding:20px;min-height:100vh}
-        .container{max-width:1400px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden}
-        .login-container{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;justify-content:center;align-items:center;z-index:1000}
-        .login-box{background:#fff;padding:50px;border-radius:20px;width:420px;max-width:90%;text-align:center}
-        .login-box h1{color:#667eea;margin-bottom:10px;font-size:28px}
-        .login-btn{width:100%;padding:14px;margin:10px 0;background:#667eea;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold}
-        .login-btn:hover{opacity:0.9}
-        .guest-btn{background:#48bb78}
-        .staff-login-btn{background:#17a2b8}
-        .error-msg{color:#e53e3e;margin-top:10px}
-        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;justify-content:center;align-items:center}
-        .modal-content{background:#fff;padding:30px;border-radius:12px;width:500px;max-width:90%;max-height:90vh;overflow-y:auto}
-        .modal-buttons{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
-        .save-btn{background:#28a745;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer}
-        .cancel-btn{background:#6c757d;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer}
-        .toast{position:fixed;bottom:20px;right:20px;background:#333;color:#fff;padding:15px 25px;border-radius:8px;z-index:9999;animation:slideIn .5s;max-width:400px}
-        .toast.success{background:#28a745}
-        .toast.error{background:#dc3545}
-        .toast.info{background:#17a2b8}
-        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-        .main-content{text-align:center;padding:40px}
-        .main-content h1{color:#1a3a5a;font-size:2rem}
-        .main-content .welcome{font-size:1.2rem;color:#555;margin:15px 0}
-        .logout-btn{background:#dc3545;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer;margin-top:20px;font-size:16px}
-        .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin:30px 0}
-        .feature-card{background:#f8f9fa;padding:20px;border-radius:10px;border:1px solid #e0e0e0}
-        .feature-card h3{color:#667eea;margin-bottom:8px}
-        .feature-card p{color:#666;font-size:14px}
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+        body{background:#eef2f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:#0b2a4a;color:#fff;padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+        .sidebar .logo{padding:0 20px 20px;font-size:1.2rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sidebar .logo i{color:#7bc5f5}
+        .sidebar .logo small{font-size:.6rem;opacity:.6;font-weight:400;display:block}
+        .sidebar .nav{padding:15px 0;flex:1}
+        .sidebar .nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;border-left:3px solid transparent}
+        .sidebar .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .sidebar .nav a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .sidebar .nav a i{width:20px;text-align:center}
+        .sidebar .user{padding:15px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.8rem;display:flex;align-items:center;gap:10px}
+        .sidebar .user .name{font-weight:600}
+        .sidebar .user .role{font-size:.65rem;opacity:.6}
+        .sidebar .folder-info{padding:8px 20px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.7rem;opacity:.8}
+        .sidebar .folder-info:hover{opacity:1;background:rgba(255,255,255,.05)}
+        .sidebar .folder-info i{margin-right:6px}
+        .sidebar .folder-info .sub{font-size:.6rem;opacity:.5;display:block;margin-top:2px}
+
+        .nav-group{position:relative}
+        .nav-group-header{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;cursor:pointer;border-left:3px solid transparent}
+        .nav-group-header:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-group-header.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub{padding-left:20px;max-height:0;overflow:hidden;transition:max-height .3s ease}
+        .nav-sub.open{max-height:300px}
+        .nav-sub a{display:flex;align-items:center;gap:12px;padding:8px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.78rem;transition:.2s;border-left:3px solid transparent}
+        .nav-sub a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-sub a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub a i{width:20px;text-align:center;font-size:.7rem}
+
+        .main{flex:1;padding:20px 24px;overflow-y:auto;max-height:100vh}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+        .header h1{font-size:1.4rem;color:#1a3a5a}
+        .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .btn{padding:6px 16px;border:none;border-radius:30px;cursor:pointer;font-size:.8rem;transition:.2s;display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600}
+        .btn-primary{background:#2a6b9e;color:#fff}
+        .btn-primary:hover{background:#1e4f77}
+        .btn-success{background:#1e8b5c;color:#fff}
+        .btn-success:hover{background:#156a45}
+        .btn-warning{background:#d48a2e;color:#fff}
+        .btn-warning:hover{background:#b87a22}
+        .btn-danger{background:#c44545;color:#fff}
+        .btn-danger:hover{background:#a13232}
+        .btn-outline{background:transparent;border:1px solid #dce4ed;color:#3a5a7a}
+        .btn-outline:hover{background:#f5f8fc}
+        .btn-sm{padding:3px 10px;font-size:.7rem}
+
+        .filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:#f7faff;border-radius:12px;border:1px solid #e8edf5;margin-bottom:16px}
+        .filter-bar label{font-size:.75rem;font-weight:600;color:#3a5a7a}
+        .filter-bar select,.filter-bar input{padding:5px 14px;border-radius:30px;border:1px solid #dce4ed;background:#fff;font-size:.75rem}
+        .filter-bar select:focus,.filter-bar input:focus{outline:0;border-color:#2a6b9e}
+        .filter-bar .date-group{display:flex;gap:4px;align-items:center}
+        .filter-bar .date-group input{padding:4px 10px;width:130px}
+        .filter-bar .filter-actions{display:flex;gap:4px;flex-wrap:wrap}
+        .filter-bar .filter-actions .btn{padding:4px 14px;font-size:.7rem}
+
+        .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+        .kpi-card{background:#fff;border-radius:12px;padding:14px 18px;border:1px solid #e8edf5;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+        .kpi-card .label{font-size:.6rem;text-transform:uppercase;color:#7a8fa5;letter-spacing:.4px;font-weight:700}
+        .kpi-card .value{font-size:1.3rem;font-weight:700;color:#1a3a5a;margin-top:2px}
+        .kpi-card .sub{font-size:.7rem;color:#7a8fa5}
+
+        .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+        .card{background:#fff;border-radius:12px;padding:16px 20px;border:1px solid #e8edf5}
+        .card h3{font-size:.95rem;color:#1a3a5a;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+        .card h3 i{color:#2a6b9e}
+        .card h3 .badge{margin-left:auto}
+        .card .card-actions{display:flex;gap:6px;margin-left:auto}
+        .card .card-actions .btn{padding:2px 12px;font-size:.6rem}
+
+        .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8edf5;max-height:280px;overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:.78rem}
+        th{background:#f5f8fc;padding:6px 10px;text-align:left;font-weight:700;color:#3a5a7a;position:sticky;top:0;z-index:2;border-bottom:2px solid #e0e7ef;white-space:nowrap}
+        td{padding:5px 10px;border-bottom:1px solid #eef3f9}
+        tr:hover td{background:#f7faff}
+        .badge{display:inline-block;padding:1px 10px;border-radius:30px;font-size:.6rem;font-weight:700}
+        .badge-success{background:#dff0e8;color:#1a6a4a}
+        .badge-warning{background:#fdf0e0;color:#a87020}
+        .badge-danger{background:#fce8e8;color:#a84040}
+        .badge-info{background:#ddeaf5;color:#1a5a7a}
+        .badge-purple{background:#e8dff5;color:#5a3a7a}
+
+        .alert-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef3f9;font-size:.78rem}
+        .alert-item:last-child{border-bottom:none}
+        .alert-item .vendor{font-weight:600;color:#1a3a5a}
+        .alert-item .days{background:#fce8e8;padding:1px 10px;border-radius:30px;font-size:.6rem;font-weight:600;color:#c44545}
+        .alert-item .days.safe{background:#e8f5e8;color:#1e8b5c}
+        .empty-state{text-align:center;padding:20px;color:#7a8fa5}
+        .empty-state i{font-size:1.4rem;opacity:.3;display:block;margin-bottom:6px}
+
+        .summary-footer{display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid #eef3f9;font-size:.78rem}
+        .summary-footer .total{font-weight:700}
+        .summary-footer .total .amount{color:#1a5cff}
+
+        @media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .logo small,.sidebar .nav a span,.sidebar .user .name,.sidebar .user .role,.sidebar .folder-info span{display:none}.sidebar .nav a{padding:10px 18px;justify-content:center}.sidebar .folder-info .sub{display:none}.main{padding:12px}.grid-2{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr 1fr}.filter-bar{flex-direction:column;align-items:stretch}}
+        @media(max-width:480px){.kpi-row{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
 
-<!-- ===== LOGIN SCREEN ===== -->
-<div id="loginScreen" class="login-container">
-    <div class="login-box">
-        <h1>✈️ SpiceJet SkyMed</h1>
-        <p>SpiceJet Medical Department</p>
-        <button class="login-btn" onclick="showAdminLogin()">👑 Admin Login</button>
-        <button class="login-btn staff-login-btn" onclick="showStaffLogin()">👨‍⚕️ Staff Login</button>
-        <button class="login-btn guest-btn" onclick="loginAsGuest()">👤 Guest Login</button>
-        <div id="loginError" class="error-msg"></div>
-    </div>
-</div>
-
-<!-- ===== ADMIN MODAL ===== -->
-<div id="adminModal" class="modal">
-    <div class="modal-content">
-        <h3>🔐 Admin Login</h3>
-        <input type="password" id="adminPwd" style="width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:5px" placeholder="Password">
-        <div class="modal-buttons">
-            <button class="save-btn" onclick="verifyAdmin()">Login</button>
-            <button class="cancel-btn" onclick="closeModal('adminModal')">Cancel</button>
-        </div>
-        <div id="adminError" style="color:red;margin-top:10px"></div>
-    </div>
-</div>
-
-<!-- ===== STAFF MODAL ===== -->
-<div id="staffModal" class="modal">
-    <div class="modal-content">
-        <h3>👨‍⚕️ Staff Login</h3>
-        <input type="text" id="staffName" style="width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:5px" placeholder="Your Name">
-        <input type="password" id="staffPwd" style="width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:5px" placeholder="Staff Password">
-        <div class="modal-buttons">
-            <button class="save-btn" onclick="verifyStaff()">Login</button>
-            <button class="cancel-btn" onclick="closeModal('staffModal')">Cancel</button>
-        </div>
-        <div id="staffError" style="color:red;margin-top:10px"></div>
-    </div>
-</div>
-
-<!-- ===== MAIN APP ===== -->
-<div id="mainApp" style="display:none">
-    <div class="container">
-        <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-            <div>
-                <h1>✈️ SpiceJet SkyMed</h1>
-                <p style="font-size:14px;opacity:0.8">Medical Department | Inventory Management</p>
-            </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <span style="background:rgba(255,255,255,0.2);padding:5px 15px;border-radius:20px">👤 <span id="userName">User</span></span>
-                <span id="userRole" style="background:#48bb78;padding:4px 12px;border-radius:15px;font-size:12px;font-weight:bold">Admin</span>
-                <button onclick="logout()" style="background:#dc3545;color:#fff;border:none;padding:5px 15px;border-radius:5px;cursor:pointer">🚪 Logout</button>
-            </div>
-        </div>
-        
-        <div class="main-content">
-            <h1>✅ Welcome to SkyMed Inventory!</h1>
-            <p class="welcome">👋 Logged in as: <strong id="displayName">User</strong> | Role: <strong id="displayRole">Guest</strong></p>
-            <div class="features">
-                <div class="feature-card">
-                    <h3>📊 Dashboard</h3>
-                    <p>View real-time inventory stats</p>
-                </div>
-                <div class="feature-card">
-                    <h3>📥 Stock Inbound</h3>
-                    <p>Add new medical items</p>
-                </div>
-                <div class="feature-card">
-                    <h3>📤 Stock Outbound</h3>
-                    <p>Issue items to departments</p>
-                </div>
-                <div class="feature-card">
-                    <h3>⚠️ Alerts</h3>
-                    <p>Expiry & low stock notifications</p>
-                </div>
-            </div>
-            <p style="color:#666;font-size:14px">🎯 Full features available in the complete version</p>
-            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
-        </div>
-    </div>
-</div>
-
 <script>
-// ============================================================
-// 🔥 SUPER SIMPLE - WORKS 100%
-// ============================================================
+    (function() {
+        if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+            window.location.href = 'App/login.html';
+        }
+    })();
 
-// ===== SUPABASE CONFIG =====
-const SUPABASE_URL = 'https://nxfvrolgauzxhkadlnux.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_SwppONsYbyd6CMmyOHxEIQ__GnTdP3R';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    function toggleSubMenu(id) {
+        const sub = document.getElementById(id);
+        const arrow = document.getElementById(id + 'Arrow');
+        if (!sub) return;
+        sub.classList.toggle('open');
+        if (arrow) {
+            arrow.style.transform = sub.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
 
-let currentUser = { name: '', role: '' };
+    document.addEventListener('DOMContentLoaded', function() {
+        const financeSub = document.getElementById('financeSub');
+        if (financeSub) {
+            const hasActive = financeSub.querySelector('a.active');
+            if (hasActive) {
+                financeSub.classList.add('open');
+                const arrow = document.getElementById('financeArrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+</script>
 
-// ===== SHOW MODALS =====
-function showAdminLogin() {
-    document.getElementById('adminModal').style.display = 'flex';
-    document.getElementById('adminPwd').value = '';
-    document.getElementById('adminError').innerHTML = '';
-    document.getElementById('loginError').innerHTML = '';
+<div class="sidebar">
+    <div class="logo">
+        <i class="fas fa-notes-medical"></i> <span>SkyMed</span>
+        <small>v6.0</small>
+    </div>
+    <div class="nav">
+        <a href="App/index.html" class="active"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+        <a href="App/master.html"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+        <a href="App/contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+        <a href="App/general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+
+        <div class="nav-group">
+            <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+                <i class="fas fa-coins"></i> <span>Finance</span>
+                <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+            </div>
+            <div class="nav-sub" id="financeSub">
+                <a href="App/receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+                <a href="App/payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+                <a href="App/advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+                <a href="App/ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+            </div>
+        </div>
+
+        <a href="App/provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+        <a href="App/payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+        <a href="App/assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        <a href="App/imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
+        <a href="App/deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+        <a href="App/settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+    </div>
+    <div class="folder-info" onclick="selectFolder()">
+        <i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span>
+        <span class="sub">Click to choose folder</span>
+    </div>
+    <div class="user">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;opacity:.7;"></i>
+        <div><span class="name">Admin</span><br><span class="role">Administrator</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <h1><i class="fas fa-chart-pie" style="color:#2a6b9e;"></i> Dashboard</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="window.location.href='App/general.html'"><i class="fas fa-plus"></i> New Entry</button>
+            <button class="btn btn-primary" onclick="window.location.href='App/contracts.html'"><i class="fas fa-file-contract"></i> Contracts</button>
+            <button class="btn btn-primary" onclick="refreshAllData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-warning" onclick="exportAll()"><i class="fas fa-file-excel"></i> Export All</button>
+            <button class="btn btn-outline" onclick="manualSave()"><i class="fas fa-save"></i> Save</button>
+            <button class="btn btn-outline" onclick="window.location.href='App/deleted.html'"><i class="fas fa-trash"></i> Deleted</button>
+            <button class="btn btn-outline" onclick="window.location.href='App/settings.html'"><i class="fas fa-cog"></i> Settings</button>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <label><i class="fas fa-calendar"></i> Period:</label>
+        <select id="periodFilter" onchange="toggleCustomDate()">
+            <option value="all">📊 All Records</option>
+            <option value="this-year">📅 This Year</option>
+            <option value="last-quarter">📅 Last Quarter</option>
+            <option value="6-months">📅 Last 6 Months</option>
+            <option value="custom">📅 Custom Range</option>
+        </select>
+
+        <div class="date-group" id="customDateGroup" style="display:none;">
+            <label>From:</label>
+            <input type="date" id="dateFrom">
+            <label>To:</label>
+            <input type="date" id="dateTo">
+        </div>
+
+        <label>Type:</label>
+        <select id="typeFilter" onchange="applyFilters()">
+            <option value="all">All</option>
+            <option value="receivables">Receivables</option>
+            <option value="payables">Payables</option>
+        </select>
+
+        <label>Status:</label>
+        <select id="statusFilter" onchange="applyFilters()">
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="received">Received</option>
+            <option value="paid">Paid</option>
+        </select>
+
+        <div class="filter-actions">
+            <button class="btn btn-primary btn-sm" onclick="applyFilters()"><i class="fas fa-filter"></i> Apply</button>
+            <button class="btn btn-outline btn-sm" onclick="resetFilters()"><i class="fas fa-undo-alt"></i> Reset</button>
+            <button class="btn btn-success btn-sm" onclick="downloadFilteredData()"><i class="fas fa-file-excel"></i> Download</button>
+        </div>
+    </div>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="card" style="margin-bottom:16px;">
+        <h3><i class="fas fa-bell"></i> Contract Alerts <span class="badge badge-danger" id="alertCount">0</span></h3>
+        <div id="alertList"></div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>
+                <i class="fas fa-arrow-right" style="color:#1e8b5c;"></i> Receivables 
+                <span class="badge badge-info" id="recCount">0</span>
+                <span class="card-actions">
+                    <button class="btn btn-success btn-sm" onclick="downloadReceivables()"><i class="fas fa-file-excel"></i></button>
+                </span>
+            </h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Vendor</th><th>Invoice</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody id="recSummaryBody"></tbody>
+                </table>
+            </div>
+            <div class="summary-footer">
+                <span>Total: <span class="amount" id="recTotal">₹0</span></span>
+                <span>Pending: <span class="amount" id="recPending" style="color:#d48a2e;">₹0</span></span>
+                <span>Received: <span class="amount" id="recReceived" style="color:#1e8b5c;">₹0</span></span>
+            </div>
+        </div>
+        <div class="card">
+            <h3>
+                <i class="fas fa-arrow-left" style="color:#c44545;"></i> Payables 
+                <span class="badge badge-info" id="payCount">0</span>
+                <span class="card-actions">
+                    <button class="btn btn-success btn-sm" onclick="downloadPayables()"><i class="fas fa-file-excel"></i></button>
+                </span>
+            </h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Vendor</th><th>Invoice</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody id="paySummaryBody"></tbody>
+                </table>
+            </div>
+            <div class="summary-footer">
+                <span>Total: <span class="amount" id="payTotal">₹0</span></span>
+                <span>Pending: <span class="amount" id="payPending" style="color:#d48a2e;">₹0</span></span>
+                <span>Paid: <span class="amount" id="payPaid" style="color:#1e8b5c;">₹0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align:center;padding:10px 20px;font-size:.7rem;color:#7a8fa5;border-top:1px solid #eef3f9;margin-top:16px;">
+        <i class="fas fa-code"></i> Developed by 
+        <a href="https://www.linkedin.com/in/ram-kumar-60072454/" target="_blank" style="color:#1a5cff;text-decoration:none;font-weight:600;">
+            Ram Kumar
+        </a>
+        &nbsp;|&nbsp;
+        <i class="fas fa-phone"></i> +91-9736438856
+    </div>
+</div>
+
+<script src="App/db.js"></script>
+<script>
+let allVendors = [], allContracts = [], allReceivables = [], allPayables = [];
+let filteredReceivables = [], filteredPayables = [];
+
+function formatCurrency(amount) {
+    if (amount === undefined || amount === null) return '₹0';
+    const num = parseFloat(amount);
+    if (isNaN(num)) return '₹0';
+    return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
 }
 
-function showStaffLogin() {
-    document.getElementById('staffModal').style.display = 'flex';
-    document.getElementById('staffName').value = '';
-    document.getElementById('staffPwd').value = '';
-    document.getElementById('staffError').innerHTML = '';
-    document.getElementById('loginError').innerHTML = '';
+function toggleCustomDate() {
+    const val = document.getElementById('periodFilter').value;
+    document.getElementById('customDateGroup').style.display = val === 'custom' ? 'flex' : 'none';
+    if (val !== 'custom') applyFilters();
 }
 
-function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
+function getDateRange() {
+    const period = document.getElementById('periodFilter').value;
+    const now = new Date();
+    let from, to = new Date();
+
+    switch(period) {
+        case 'all':
+            return null;
+        case 'this-year':
+            from = new Date(now.getFullYear(), 0, 1);
+            break;
+        case 'last-quarter':
+            const q = Math.floor((now.getMonth() - 3) / 3);
+            const qYear = now.getFullYear() + (q < 0 ? -1 : 0);
+            const qMonth = ((q % 3) + 3) % 3;
+            from = new Date(qYear, qMonth * 3, 1);
+            break;
+        case '6-months':
+            from = new Date(now);
+            from.setMonth(now.getMonth() - 6);
+            break;
+        case 'custom':
+            const fromVal = document.getElementById('dateFrom').value;
+            const toVal = document.getElementById('dateTo').value;
+            if (fromVal && toVal) {
+                from = new Date(fromVal);
+                to = new Date(toVal);
+            } else {
+                from = new Date(now);
+                from.setMonth(now.getMonth() - 1);
+            }
+            break;
+        default:
+            from = new Date(now);
+            from.setMonth(now.getMonth() - 1);
+    }
+    return { from, to };
 }
 
-// ===== VERIFY LOGIN =====
-function verifyAdmin() {
-    const pwd = document.getElementById('adminPwd').value;
-    if (pwd === 'admin123') {
-        closeModal('adminModal');
-        startApp('Administrator', 'admin');
-    } else {
-        document.getElementById('adminError').innerHTML = '❌ Wrong password!';
+function applyFilters() {
+    const dateRange = getDateRange();
+    const type = document.getElementById('typeFilter').value;
+    const status = document.getElementById('statusFilter').value;
+
+    filteredReceivables = allReceivables.filter(r => {
+        let inDate = true;
+        if (dateRange) {
+            const date = new Date(r.date || r.createdAt || Date.now());
+            inDate = date >= dateRange.from && date <= dateRange.to;
+        }
+        const inType = type === 'all' || type === 'receivables';
+        const inStatus = status === 'all' || 
+                        (status === 'pending' && r.status !== 'Received' && r.status !== 'Paid') ||
+                        (status === 'received' && r.status === 'Received') ||
+                        (status === 'paid' && r.status === 'Paid');
+        return inDate && inType && inStatus;
+    });
+
+    filteredPayables = allPayables.filter(r => {
+        let inDate = true;
+        if (dateRange) {
+            const date = new Date(r.date || r.createdAt || Date.now());
+            inDate = date >= dateRange.from && date <= dateRange.to;
+        }
+        const inType = type === 'all' || type === 'payables';
+        const inStatus = status === 'all' || 
+                        (status === 'pending' && r.status !== 'Paid' && r.status !== 'Received') ||
+                        (status === 'received' && r.status === 'Received') ||
+                        (status === 'paid' && r.status === 'Paid');
+        return inDate && inType && inStatus;
+    });
+
+    updateDashboard();
+}
+
+function resetFilters() {
+    document.getElementById('periodFilter').value = 'all';
+    document.getElementById('typeFilter').value = 'all';
+    document.getElementById('statusFilter').value = 'all';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('customDateGroup').style.display = 'none';
+    applyFilters();
+}
+
+async function loadDashboard() {
+    try {
+        allVendors = await db.getAll('vendors') || [];
+        allContracts = await db.getAll('contracts') || [];
+        allReceivables = await db.getAll('receivables') || [];
+        allPayables = await db.getAll('payables') || [];
+        console.log('📊 Data loaded:', {
+            vendors: allVendors.length,
+            contracts: allContracts.length,
+            receivables: allReceivables.length,
+            payables: allPayables.length
+        });
+        applyFilters();
+        updateAlerts();
+    } catch(e) {
+        console.error('Load failed:', e);
+        setTimeout(loadDashboard, 2000);
     }
 }
 
-function verifyStaff() {
-    const name = document.getElementById('staffName').value.trim();
-    const pwd = document.getElementById('staffPwd').value;
-    if (!name) {
-        document.getElementById('staffError').innerHTML = '❌ Name is required!';
+function updateDashboard() {
+    const recData = filteredReceivables;
+    const payData = filteredPayables;
+
+    const totalRec = recData.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    const totalPay = payData.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    const pendingRec = recData.filter(r => r.status !== 'Received' && r.status !== 'Paid').reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    const pendingPay = payData.filter(r => r.status !== 'Paid' && r.status !== 'Received').reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    const receivedRec = recData.filter(r => r.status === 'Received').reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    const paidPay = payData.filter(r => r.status === 'Paid').reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+
+    document.getElementById('kpiRow').innerHTML = `
+        <div class="kpi-card"><div class="label">Total Receivables</div><div class="value">${formatCurrency(totalRec)}</div><div class="sub">${recData.length} invoices</div></div>
+        <div class="kpi-card"><div class="label">Total Payables</div><div class="value">${formatCurrency(totalPay)}</div><div class="sub">${payData.length} invoices</div></div>
+        <div class="kpi-card"><div class="label">Net Position</div><div class="value" style="color:${totalRec - totalPay >= 0 ? '#1e8b5c' : '#c44545'}">${formatCurrency(totalRec - totalPay)}</div><div class="sub">Receivable - Payable</div></div>
+        <div class="kpi-card"><div class="label">Pending Receivables</div><div class="value" style="color:#d48a2e">${formatCurrency(pendingRec)}</div><div class="sub">Awaiting payment</div></div>
+        <div class="kpi-card"><div class="label">Pending Payables</div><div class="value" style="color:#c44545">${formatCurrency(pendingPay)}</div><div class="sub">Need to pay</div></div>
+        <div class="kpi-card"><div class="label">Vendors / Contracts</div><div class="value">${allVendors.length} / ${allContracts.length}</div><div class="sub">Active vendors & contracts</div></div>
+    `;
+
+    document.getElementById('recCount').textContent = recData.length;
+    document.getElementById('recTotal').textContent = formatCurrency(totalRec);
+    document.getElementById('recPending').textContent = formatCurrency(pendingRec);
+    document.getElementById('recReceived').textContent = formatCurrency(receivedRec);
+
+    if (recData.length === 0) {
+        document.getElementById('recSummaryBody').innerHTML = '<tr><td colspan="4" class="empty-state"><i class="fas fa-inbox"></i>No receivables</td></tr>';
+    } else {
+        let html = '';
+        recData.slice(0, 20).forEach(r => {
+            const statusBadge = r.status === 'Received' ? 'badge-success' : 'badge-warning';
+            html += `<tr>
+                <td>${r.vendorName || '-'}</td>
+                <td style="font-size:.7rem;">${r.invoice || '-'}</td>
+                <td>${formatCurrency(r.amount || 0)}</td>
+                <td><span class="badge ${statusBadge}">${r.status || 'Pending'}</span></td>
+            </tr>`;
+        });
+        document.getElementById('recSummaryBody').innerHTML = html;
+    }
+
+    document.getElementById('payCount').textContent = payData.length;
+    document.getElementById('payTotal').textContent = formatCurrency(totalPay);
+    document.getElementById('payPending').textContent = formatCurrency(pendingPay);
+    document.getElementById('payPaid').textContent = formatCurrency(paidPay);
+
+    if (payData.length === 0) {
+        document.getElementById('paySummaryBody').innerHTML = '<tr><td colspan="4" class="empty-state"><i class="fas fa-inbox"></i>No payables</td></tr>';
+    } else {
+        let html = '';
+        payData.slice(0, 20).forEach(r => {
+            const statusBadge = r.status === 'Paid' ? 'badge-success' : 'badge-warning';
+            html += `<tr>
+                <td>${r.vendorName || '-'}</td>
+                <td style="font-size:.7rem;">${r.invoice || '-'}</td>
+                <td>${formatCurrency(r.amount || 0)}</td>
+                <td><span class="badge ${statusBadge}">${r.status || 'Pending'}</span></td>
+            </tr>`;
+        });
+        document.getElementById('paySummaryBody').innerHTML = html;
+    }
+}
+
+function updateAlerts() {
+    const today = new Date();
+    const ninetyDays = new Date();
+    ninetyDays.setDate(today.getDate() + 90);
+    const expiring = allContracts.filter(c => {
+        if (!c.endDate) return false;
+        const end = new Date(c.endDate);
+        return end >= today && end <= ninetyDays;
+    });
+    expiring.sort((a, b) => new Date(a.endDate) - new Date(b.endDate));
+    document.getElementById('alertCount').textContent = expiring.length;
+    if (!expiring.length) {
+        document.getElementById('alertList').innerHTML = '<div class="empty-state"><i class="fas fa-check-circle" style="color:#1e8b5c;"></i>No contracts expiring in next 90 days</div>';
         return;
     }
-    if (pwd === 'staff123') {
-        closeModal('staffModal');
-        startApp(name, 'staff');
-    } else {
-        document.getElementById('staffError').innerHTML = '❌ Wrong password!';
+    let html = '';
+    expiring.forEach(c => {
+        const end = new Date(c.endDate);
+        const daysLeft = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+        const isUrgent = daysLeft <= 30;
+        html += `<div class="alert-item">
+            <div><span class="vendor">${c.vendorName || 'Unknown'}</span> <span style="font-size:.7rem;color:#7a8fa5;margin-left:8px;">${c.base || ''} · ${c.serviceCategory || ''}</span></div>
+            <div><span class="days ${isUrgent ? '' : 'safe'}">${daysLeft} days left</span></div>
+        </div>`;
+    });
+    document.getElementById('alertList').innerHTML = html;
+}
+
+function downloadFilteredData() {
+    const type = document.getElementById('typeFilter').value;
+    let data = [];
+    let filename = 'Dashboard_Data';
+
+    if (type === 'all' || type === 'receivables') {
+        data = data.concat(filteredReceivables.map(r => ({
+            'Type': 'Receivable',
+            'Vendor': r.vendorName || '',
+            'Invoice': r.invoice || '',
+            'Amount': r.amount || 0,
+            'Status': r.status || 'Pending',
+            'Date': r.date || '',
+            'Due Date': r.dueDate || '',
+            'Base': r.base || ''
+        })));
+        filename += '_Receivables';
     }
-}
 
-function loginAsGuest() {
-    const name = prompt('👤 Enter your name:', 'Guest');
-    if (name !== null) {
-        startApp(name || 'Guest', 'guest');
+    if (type === 'all' || type === 'payables') {
+        data = data.concat(filteredPayables.map(r => ({
+            'Type': 'Payable',
+            'Vendor': r.vendorName || '',
+            'Invoice': r.invoice || '',
+            'Amount': r.amount || 0,
+            'Status': r.status || 'Pending',
+            'Date': r.date || '',
+            'Due Date': r.dueDate || '',
+            'Base': r.base || ''
+        })));
+        filename += '_Payables';
     }
-}
 
-// ===== START APP =====
-function startApp(name, role) {
-    currentUser = { name, role };
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'block';
-    document.getElementById('userName').textContent = name;
-    document.getElementById('displayName').textContent = name;
-    document.getElementById('displayRole').textContent = role.toUpperCase();
-    
-    const roleBadge = document.getElementById('userRole');
-    roleBadge.textContent = role.toUpperCase();
-    if(role === 'guest') roleBadge.style.background = '#ed8936';
-    else if(role === 'staff') roleBadge.style.background = '#17a2b8';
-    else roleBadge.style.background = '#48bb78';
-    
-    showToast('✅ Welcome ' + name + '!', 'success');
-    console.log('✅ Logged in:', name, 'Role:', role);
-}
-
-// ===== LOGOUT =====
-function logout() {
-    if(confirm('Logout?')) {
-        location.reload();
+    if (data.length === 0) {
+        alert('❌ No data to download for selected filters!');
+        return;
     }
+
+    data.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+        { wch: 12 }, { wch: 30 }, { wch: 20 }, { wch: 15 },
+        { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 12 }
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Dashboard_Data');
+
+    const totalRec = filteredReceivables.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    const totalPay = filteredPayables.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    const periodLabel = document.getElementById('periodFilter').value;
+    const summary = [
+        ['📊 Dashboard Summary'],
+        [''],
+        ['Period', periodLabel === 'all' ? 'All Records' : periodLabel],
+        ['Total Receivables', totalRec],
+        ['Total Payables', totalPay],
+        ['Net Position', totalRec - totalPay],
+        [''],
+        ['Receivables Count', filteredReceivables.length],
+        ['Payables Count', filteredPayables.length],
+        [''],
+        ['Generated On', new Date().toLocaleString()]
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(summary);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+
+    XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    alert(`✅ ${data.length} records downloaded!`);
 }
 
-// ===== TOAST =====
-function showToast(message, type = 'info') {
-    const existing = document.querySelector('.toast');
-    if(existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => { if(toast.parentNode) toast.remove(); }, 3000);
-}
-
-// ===== TEST SUPABASE =====
-async function testSupabase() {
-    try {
-        const { data, error } = await supabase.from('medicines').select('count', { count: 'exact' });
-        if (error) throw error;
-        console.log('✅ Supabase Connected!');
-    } catch(e) {
-        console.log('⚠️ Supabase:', e.message);
+function downloadReceivables() {
+    if (filteredReceivables.length === 0) {
+        alert('No receivables to download!');
+        return;
     }
+    const data = filteredReceivables.map(r => ({
+        'Vendor': r.vendorName || '',
+        'Invoice': r.invoice || '',
+        'Amount': r.amount || 0,
+        'Status': r.status || 'Pending',
+        'Date': r.date || '',
+        'Due Date': r.dueDate || '',
+        'Base': r.base || '',
+        'Received On': r.receivedOn || '',
+        'UTR': r.utr || ''
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Receivables');
+    XLSX.writeFile(wb, `Receivables_${new Date().toISOString().slice(0,10)}.xlsx`);
+    alert(`✅ ${data.length} receivables downloaded!`);
 }
 
-// ===== CHECK SESSION =====
-window.onload = function() {
-    // Check if already logged in
-    const saved = sessionStorage.getItem('skymed_user');
-    if (saved) {
-        try {
-            const user = JSON.parse(saved);
-            startApp(user.name, user.role);
-        } catch(e) {}
+function downloadPayables() {
+    if (filteredPayables.length === 0) {
+        alert('No payables to download!');
+        return;
     }
-    testSupabase();
-    console.log('📦 App loaded!');
-};
+    const data = filteredPayables.map(r => ({
+        'Vendor': r.vendorName || '',
+        'Invoice': r.invoice || '',
+        'Amount': r.amount || 0,
+        'Status': r.status || 'Pending',
+        'Date': r.date || '',
+        'Due Date': r.dueDate || '',
+        'Base': r.base || '',
+        'Paid On': r.paidOn || '',
+        'UTR': r.utr || ''
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Payables');
+    XLSX.writeFile(wb, `Payables_${new Date().toISOString().slice(0,10)}.xlsx`);
+    alert(`✅ ${data.length} payables downloaded!`);
+}
 
-// ===== MAKE GLOBAL =====
-window.showAdminLogin = showAdminLogin;
-window.showStaffLogin = showStaffLogin;
-window.verifyAdmin = verifyAdmin;
-window.verifyStaff = verifyStaff;
-window.loginAsGuest = loginAsGuest;
-window.closeModal = closeModal;
-window.startApp = startApp;
-window.logout = logout;
+async function selectFolder() {
+    const handle = await db.selectFolder();
+    if (handle) document.getElementById('folderLabel').textContent = handle.name;
+}
 
-console.log('✅ All functions loaded!');
-console.log('🔑 Admin: admin123 | Staff: staff123');
+async function manualSave() {
+    await db.triggerSync();
+    alert('✅ Data saved!');
+}
+
+async function exportAll() {
+    await db.exportCSV('vendors');
+    setTimeout(() => db.exportCSV('contracts'), 500);
+    setTimeout(() => db.exportCSV('general'), 1000);
+    setTimeout(() => db.exportCSV('receivables'), 1500);
+    setTimeout(() => db.exportCSV('payables'), 2000);
+}
+
+async function refreshAllData() {
+    await db.loadFromLocalStorage();
+    await loadDashboard();
+    alert('✅ Data refreshed!');
+}
+window.refreshAllData = refreshAllData;
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const savedFolder = sessionStorage.getItem('skymed_folder');
+    if (savedFolder) document.getElementById('folderLabel').textContent = savedFolder;
+    await db.loadFromLocalStorage();
+    await loadDashboard();
+    setInterval(loadDashboard, 60000);
+});
 </script>
 </body>
 </html>

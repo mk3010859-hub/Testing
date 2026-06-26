@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyMed Pro - Provision</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="security.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+        body{background:#eef2f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:#0b2a4a;color:#fff;padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+        .sidebar .logo{padding:0 20px 20px;font-size:1.2rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sidebar .logo i{color:#7bc5f5}
+        .sidebar .logo small{font-size:.6rem;opacity:.6;font-weight:400;display:block}
+        .sidebar .nav{padding:15px 0;flex:1}
+        .sidebar .nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;border-left:3px solid transparent}
+        .sidebar .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .sidebar .nav a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .sidebar .nav a i{width:20px;text-align:center}
+        .sidebar .user{padding:15px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.8rem;display:flex;align-items:center;gap:10px}
+        .sidebar .user .name{font-weight:600}
+        .sidebar .user .role{font-size:.65rem;opacity:.6}
+        .sidebar .folder-info{padding:8px 20px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.7rem;opacity:.8}
+        .sidebar .folder-info:hover{opacity:1;background:rgba(255,255,255,.05)}
+        .sidebar .folder-info i{margin-right:6px}
+        .sidebar .folder-info .sub{font-size:.6rem;opacity:.5;display:block;margin-top:2px}
+        
+        .nav-group{position:relative}
+        .nav-group-header{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;cursor:pointer;border-left:3px solid transparent}
+        .nav-group-header:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-group-header.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub{padding-left:20px;max-height:0;overflow:hidden;transition:max-height .3s ease}
+        .nav-sub.open{max-height:300px}
+        .nav-sub a{display:flex;align-items:center;gap:12px;padding:8px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.78rem;transition:.2s;border-left:3px solid transparent}
+        .nav-sub a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-sub a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub a i{width:20px;text-align:center;font-size:.7rem}
+        
+        .main{flex:1;padding:20px 24px;overflow-y:auto;max-height:100vh}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+        .header h1{font-size:1.4rem;color:#1a3a5a}
+        .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .btn{padding:6px 16px;border:none;border-radius:30px;cursor:pointer;font-size:.8rem;transition:.2s;display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600}
+        .btn-primary{background:#2a6b9e;color:#fff}
+        .btn-primary:hover{background:#1e4f77}
+        .btn-success{background:#1e8b5c;color:#fff}
+        .btn-success:hover{background:#156a45}
+        .btn-warning{background:#d48a2e;color:#fff}
+        .btn-warning:hover{background:#b87a22}
+        .btn-danger{background:#c44545;color:#fff}
+        .btn-danger:hover{background:#a13232}
+        .btn-outline{background:transparent;border:1px solid #dce4ed;color:#3a5a7a}
+        .btn-outline:hover{background:#f5f8fc}
+        .btn-sm{padding:3px 10px;font-size:.7rem}
+        
+        .filter-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 12px;background:#f7faff;border-radius:10px;border:1px solid #e8edf5;margin-bottom:12px}
+        .filter-bar select,.filter-bar input{padding:4px 10px;border-radius:30px;border:1px solid #dce4ed;background:#fff;font-size:.75rem}
+        .filter-bar select:focus,.filter-bar input:focus{outline:0;border-color:#2a6b9e}
+        .filter-bar .fy-actions{display:flex;gap:4px;align-items:center}
+        .filter-bar .fy-actions .btn-sm{padding:2px 10px;font-size:.65rem}
+        
+        .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8edf5;height:calc(100vh - 360px);overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:1400px}
+        th{background:#f5f8fc;padding:8px 10px;text-align:left;font-weight:700;color:#3a5a7a;position:sticky;top:0;z-index:2;border-bottom:2px solid #e0e7ef;white-space:nowrap}
+        td{padding:6px 10px;border-bottom:1px solid #eef3f9}
+        tr:hover td{background:#f7faff}
+        tr.total-row{background:#f0f4ff;font-weight:600}
+        tr.total-row td{border-top:2px solid #2a6b9e}
+        
+        .badge{display:inline-block;padding:1px 10px;border-radius:30px;font-size:.6rem;font-weight:700}
+        .badge-success{background:#dff0e8;color:#1a6a4a}
+        .badge-warning{background:#fdf0e0;color:#a87020}
+        .badge-danger{background:#fce8e8;color:#a84040}
+        .badge-info{background:#ddeaf5;color:#1a5a7a}
+        .badge-purple{background:#e8dff5;color:#5a3a7a}
+        
+        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:#fff;border-radius:16px;padding:24px;max-width:750px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+        .modal-box h3{margin-bottom:16px;color:#1a3a5a;display:flex;align-items:center;gap:10px}
+        .modal-box .form-group{margin-bottom:12px}
+        .modal-box .form-group label{font-size:.78rem;font-weight:600;color:#3a5a7a;display:block;margin-bottom:4px}
+        .modal-box .form-group input,.modal-box .form-group select{width:100%;padding:8px 12px;border:1px solid #dce4ed;border-radius:8px;font-size:.8rem}
+        .modal-box .form-group input:focus,.modal-box .form-group select:focus{outline:0;border-color:#2a6b9e}
+        .modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;padding-top:16px;border-top:1px solid #eef3f9}
+        .modal-actions .btn{padding:8px 20px}
+        
+        .empty-state{text-align:center;padding:30px;color:#7a8fa5}
+        .empty-state i{font-size:1.6rem;opacity:.3;display:block;margin-bottom:8px}
+        .months-row th{min-width:70px;text-align:right}
+        .provision-badge{background:#e8f8f0;color:#1a6a4a;border:1px solid #1e8b5c;padding:1px 8px;border-radius:30px;font-size:.55rem}
+        
+        @media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .logo small,.sidebar .nav a span,.sidebar .user .name,.sidebar .user .role,.sidebar .folder-info span{display:none}.sidebar .nav a{padding:10px 18px;justify-content:center}.sidebar .folder-info .sub{display:none}.main{padding:12px}}
+    </style>
+</head>
+<body>
+
+<script>
+    (function() {
+        if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    })();
+
+    function logoutUser() {
+        if (confirm('⚠️ Are you sure you want to logout?')) {
+            sessionStorage.removeItem('skymed_logged_in');
+            sessionStorage.removeItem('skymed_login_time');
+            window.location.href = 'login.html';
+        }
+    }
+
+    function toggleSubMenu(id) {
+        const sub = document.getElementById(id);
+        const arrow = document.getElementById(id + 'Arrow');
+        if (!sub) return;
+        sub.classList.toggle('open');
+        if (arrow) {
+            arrow.style.transform = sub.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const financeSub = document.getElementById('financeSub');
+        if (financeSub) {
+            const hasActive = financeSub.querySelector('a.active');
+            if (hasActive) {
+                financeSub.classList.add('open');
+                const arrow = document.getElementById('financeArrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+</script>
+
+<div class="sidebar">
+    <div class="logo"><i class="fas fa-notes-medical"></i> <span>SkyMed</span><small>v6.0</small></div>
+<div class="nav">
+    <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+    <a href="master.html" class="active"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+    <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+    <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+    
+    <div class="nav-group">
+        <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+            <i class="fas fa-coins"></i> <span>Finance</span>
+            <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+        </div>
+        <div class="nav-sub" id="financeSub">
+            <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+            <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+            <a href="advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+            <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+        </div>
+    </div>
+    
+    <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+    <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+   <a href="assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        <a href="imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
+    <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+    <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+</div>
+    <div class="folder-info" onclick="selectFolder()">
+        <i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span>
+        <span class="sub">Click to choose folder</span>
+    </div>
+    <div class="user">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;opacity:.7;"></i>
+        <div><span class="name">Admin</span><br><span class="role">Administrator</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <h1><i class="fas fa-calculator" style="color:#6c3483;"></i> Provision <small style="font-size:.7rem;color:#7a8fa5;font-weight:400;">Payable Vendors Only</small></h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="openAddProvision()"><i class="fas fa-plus"></i> Add Provision</button>
+            <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-warning" onclick="exportProvision()"><i class="fas fa-file-excel"></i> Export</button>
+            <button class="btn btn-outline" onclick="manualSave()"><i class="fas fa-save"></i> Save</button>
+            <button class="btn btn-danger" onclick="rolloverFY()"><i class="fas fa-arrow-right"></i> Rollover FY</button>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <select id="filterFY" onchange="renderProvision()">
+            <option value="">All FY</option>
+        </select>
+        <div class="fy-actions">
+            <button class="btn btn-success btn-sm" onclick="openAddFYModal()"><i class="fas fa-plus"></i> Add FY</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSelectedFY()"><i class="fas fa-trash"></i> Delete FY</button>
+        </div>
+        <select id="filterVendor" onchange="renderProvision()"><option value="">All Vendors</option></select>
+        <input type="text" id="filterSearch" placeholder="Search..." oninput="renderProvision()">
+        <button class="btn btn-primary" onclick="renderProvision()"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn btn-outline" onclick="resetFilters()"><i class="fas fa-undo-alt"></i> Reset</button>
+        <span style="font-size:.8rem;color:#7a8fa5;margin-left:auto;" id="totalProvision">Total: ₹0</span>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="min-width:120px;">Vendor</th>
+                    <th style="min-width:80px;">Vendor Code</th>
+                    <th style="min-width:150px;">Locations</th>
+                    <th style="min-width:80px;">Category</th>
+                    <th style="min-width:80px;">Rate</th>
+                    <th class="months-row">Apr</th>
+                    <th class="months-row">May</th>
+                    <th class="months-row">Jun</th>
+                    <th class="months-row">Jul</th>
+                    <th class="months-row">Aug</th>
+                    <th class="months-row">Sep</th>
+                    <th class="months-row">Oct</th>
+                    <th class="months-row">Nov</th>
+                    <th class="months-row">Dec</th>
+                    <th class="months-row">Jan</th>
+                    <th class="months-row">Feb</th>
+                    <th class="months-row">Mar</th>
+                    <th style="min-width:80px;">Total</th>
+                    <th style="min-width:60px;">FY</th>
+                    <th style="min-width:100px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="provisionBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="provisionModal">
+    <div class="modal-box">
+        <h3 id="modalTitle"><i class="fas fa-plus"></i> Add Provision</h3>
+        <div id="modalBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-success" id="modalSaveBtn" onclick="saveProvision()"><i class="fas fa-save"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="fyModal">
+    <div class="modal-box">
+        <h3 id="fyModalTitle"><i class="fas fa-plus"></i> Add Financial Year</h3>
+        <div id="fyModalBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeFYModal()">Cancel</button>
+            <button class="btn btn-success" onclick="saveFY()"><i class="fas fa-save"></i> Add FY</button>
+        </div>
+    </div>
+</div>
+
+<script src="db.js"></script>
+<script>
+let vendors = [], contracts = [], provisions = [], dataLoaded = false;
+let editId = null;
+const MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+let fyList = [];
+
+async function loadProvision() {
+    try {
+        vendors = await db.getAll('vendors') || [];
+        contracts = await db.getAll('contracts') || [];
+        provisions = await db.getAll('provisions') || [];
+        dataLoaded = true;
+        populateFYList();
+        populateFilters();
+        renderProvision();
+        console.log('📊 Provisions loaded:', provisions.length);
+    } catch(e) {
+        console.error('Load failed:', e);
+        setTimeout(loadProvision, 1000);
+    }
+}
+
+function populateFYList() {
+    const fys = [...new Set(provisions.map(p => p.fy).filter(Boolean))];
+    fys.sort();
+    
+    if (fys.length === 0) {
+        const currentFY = getCurrentFY();
+        fys.push(currentFY);
+        fys.push('FY24-25');
+        fys.push('FY25-26');
+        fys.push('FY26-27');
+    }
+    
+    fyList = fys;
+    updateFYDropdown();
+}
+
+function updateFYDropdown() {
+    const select = document.getElementById('filterFY');
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">All FY</option>';
+    fyList.forEach(fy => {
+        select.innerHTML += `<option value="${fy}" ${fy === currentValue ? 'selected' : ''}>${fy}</option>`;
+    });
+    if (!currentValue) {
+        const currentFY = getCurrentFY();
+        if (fyList.includes(currentFY)) {
+            select.value = currentFY;
+        }
+    }
+}
+
+function getCurrentFY() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    if (month >= 3) {
+        return 'FY' + year.toString().slice(-2) + '-' + (year + 1).toString().slice(-2);
+    } else {
+        return 'FY' + (year - 1).toString().slice(-2) + '-' + year.toString().slice(-2);
+    }
+}
+
+function openAddFYModal() {
+    document.getElementById('fyModalTitle').innerHTML = '<i class="fas fa-plus"></i> Add Financial Year';
+    document.getElementById('fyModalBody').innerHTML = `
+        <div class="form-group">
+            <label>Financial Year (e.g., FY27-28) *</label>
+            <input type="text" id="f_fyNew" placeholder="FY27-28" value="FY${(parseInt(getCurrentFY().slice(2,4)) + 1).toString().padStart(2,'0')}-${(parseInt(getCurrentFY().slice(5,7)) + 1).toString().padStart(2,'0')}">
+        </div>
+        <div class="form-group">
+            <label>Copy from existing FY (optional)</label>
+            <select id="f_fyCopyFrom">
+                <option value="">-- None --</option>
+                ${fyList.map(fy => `<option value="${fy}">${fy}</option>`).join('')}
+            </select>
+        </div>
+        <div style="font-size:.75rem;color:#7a8fa5;margin-top:8px;">
+            💡 Format: FY + Year + - + Next Year (e.g., FY27-28)
+        </div>
+    `;
+    document.getElementById('fyModal').classList.add('active');
+}
+
+function closeFYModal() {
+    document.getElementById('fyModal').classList.remove('active');
+}
+
+async function saveFY() {
+    const newFY = document.getElementById('f_fyNew').value.trim().toUpperCase();
+    const copyFrom = document.getElementById('f_fyCopyFrom').value;
+    
+    if (!newFY) { alert('Please enter financial year!'); return; }
+    if (!/^FY\d{2}-\d{2}$/.test(newFY)) {
+        alert('❌ Invalid format! Use: FY27-28');
+        return;
+    }
+    if (fyList.includes(newFY)) {
+        alert('❌ FY already exists!');
+        return;
+    }
+    
+    if (copyFrom) {
+        const sourceEntries = provisions.filter(p => p.fy === copyFrom);
+        if (sourceEntries.length > 0) {
+            if (!confirm(`Copy ${sourceEntries.length} entries from ${copyFrom} to ${newFY}?`)) return;
+            
+            for (const entry of sourceEntries) {
+                const newEntry = {
+                    ...entry,
+                    id: generateId(),
+                    fy: newFY,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    remarks: (entry.remarks || '') + ' (Copied from ' + copyFrom + ')'
+                };
+                await db.put('provisions', newEntry);
+            }
+        }
+    }
+    
+    fyList.push(newFY);
+    fyList.sort();
+    updateFYDropdown();
+    document.getElementById('filterFY').value = newFY;
+    closeFYModal();
+    await loadProvision();
+    await db.triggerSync();
+    alert(`✅ FY ${newFY} added successfully!`);
+}
+
+async function deleteSelectedFY() {
+    const fy = document.getElementById('filterFY').value;
+    if (!fy) { alert('Please select a FY to delete!'); return; }
+    if (fy === getCurrentFY()) {
+        alert('⚠️ Cannot delete current financial year!');
+        return;
+    }
+    
+    const count = provisions.filter(p => p.fy === fy).length;
+    if (!confirm(`⚠️ Delete FY ${fy}? This will remove ${count} provision entries.\n\nThis cannot be undone!`)) return;
+    if (!confirm('⚠️ FINAL WARNING: Are you sure?')) return;
+    
+    const toDelete = provisions.filter(p => p.fy === fy);
+    for (const p of toDelete) {
+        await db.delete('provisions', p.id);
+    }
+    
+    fyList = fyList.filter(f => f !== fy);
+    updateFYDropdown();
+    document.getElementById('filterFY').value = '';
+    await loadProvision();
+    await db.triggerSync();
+    alert(`✅ FY ${fy} deleted! ${count} entries removed.`);
+}
+
+function getPayableVendors() {
+    let payableVendors = vendors.filter(v => v.provisionApplicable === true);
+    if (payableVendors.length === 0) {
+        const payableContractCodes = contracts
+            .filter(c => c.type === 'Payable' || c.entryType === 'Payable' || c.status === 'Payable')
+            .map(c => c.vendorCode);
+        payableVendors = vendors.filter(v => payableContractCodes.includes(v.code));
+    }
+    return payableVendors;
+}
+
+function populateFilters() {
+    const payableVendors = getPayableVendors();
+    const vendorSel = document.getElementById('filterVendor');
+    const current = vendorSel.value;
+    vendorSel.innerHTML = '<option value="">All Vendors</option>';
+    payableVendors.forEach(v => {
+        vendorSel.innerHTML += `<option value="${v.code}">${v.code} - ${v.name}</option>`;
+    });
+    if (current) vendorSel.value = current;
+}
+
+function resetFilters() {
+    document.getElementById('filterFY').value = getCurrentFY();
+    document.getElementById('filterVendor').value = '';
+    document.getElementById('filterSearch').value = '';
+    renderProvision();
+}
+
+function renderProvision() {
+    if (!dataLoaded) return;
+    
+    const fyFilter = document.getElementById('filterFY').value;
+    const vendorFilter = document.getElementById('filterVendor').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+    let data = provisions;
+    if (fyFilter) data = data.filter(p => p.fy === fyFilter);
+    if (vendorFilter) data = data.filter(p => p.vendorCode === vendorFilter);
+    if (search) data = data.filter(p => 
+        (p.vendorName || '').toLowerCase().includes(search) ||
+        (p.vendorCode || '').toLowerCase().includes(search)
+    );
+
+    const grouped = {};
+    data.forEach(p => {
+        const key = p.vendorCode + '|' + p.fy;
+        if (!grouped[key]) {
+            grouped[key] = {
+                vendorCode: p.vendorCode,
+                vendorName: p.vendorName,
+                fy: p.fy,
+                locations: [],
+                category: p.category || '',
+                rate: p.rate || 0,
+                months: { Apr: 0, May: 0, Jun: 0, Jul: 0, Aug: 0, Sep: 0, Oct: 0, Nov: 0, Dec: 0, Jan: 0, Feb: 0, Mar: 0 },
+                entries: []
+            };
+        }
+        grouped[key].locations.push(p.location || '');
+        grouped[key].category = p.category || grouped[key].category;
+        grouped[key].rate = p.rate || grouped[key].rate;
+        MONTHS.forEach(m => {
+            grouped[key].months[m] = (grouped[key].months[m] || 0) + (p.months && p.months[m] ? parseFloat(p.months[m]) || 0 : 0);
+        });
+        grouped[key].entries.push(p);
+    });
+
+    const tbody = document.getElementById('provisionBody');
+    let totalSum = 0;
+    
+    if (Object.keys(grouped).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="20" class="empty-state"><i class="fas fa-inbox"></i>No provisions found</td></tr>';
+        document.getElementById('totalProvision').textContent = 'Total: ₹0';
+        return;
+    }
+
+    let html = '';
+    for (const key in grouped) {
+        const g = grouped[key];
+        const total = MONTHS.reduce((sum, m) => sum + (g.months[m] || 0), 0);
+        totalSum += total;
+        const locations = g.locations.filter((v, i, a) => a.indexOf(v) === i).join(', ');
+        
+        html += `<tr>
+            <td><strong>${g.vendorName}</strong></td>
+            <td><span class="badge badge-info">${g.vendorCode}</span></td>
+            <td><span style="font-size:.7rem;">${locations || '-'}</span></td>
+            <td>${g.category || '-'}</td>
+            <td>₹${(g.rate || 0).toFixed(2)}</td>`;
+        
+        MONTHS.forEach(m => {
+            const val = g.months[m] || 0;
+            html += `<td style="text-align:right;font-weight:${val > 0 ? '600' : '400'};">${val > 0 ? '₹' + val.toFixed(0) : '-'}</td>`;
+        });
+        
+        html += `<td style="text-align:right;font-weight:700;color:#2a6b9e;">₹${total.toFixed(0)}</td>
+            <td><span class="badge badge-purple">${g.fy}</span></td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="editProvisionGroup('${g.vendorCode}','${g.fy}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="deleteProvisionGroup('${g.vendorCode}','${g.fy}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    }
+
+    html += `<tr class="total-row">
+        <td colspan="5" style="text-align:right;font-weight:700;">GRAND TOTAL</td>`;
+    const monthTotals = {};
+    MONTHS.forEach(m => { monthTotals[m] = 0; });
+    for (const key in grouped) {
+        MONTHS.forEach(m => {
+            monthTotals[m] += (grouped[key].months[m] || 0);
+        });
+    }
+    MONTHS.forEach(m => {
+        html += `<td style="text-align:right;font-weight:700;color:#1a5cff;">₹${(monthTotals[m] || 0).toFixed(0)}</td>`;
+    });
+    html += `<td style="text-align:right;font-weight:700;color:#1a5cff;">₹${totalSum.toFixed(0)}</td>
+        <td colspan="2"></td>
+    </tr>`;
+
+    tbody.innerHTML = html;
+    document.getElementById('totalProvision').textContent = `Total: ₹${totalSum.toFixed(0)}`;
+}
+
+function openAddProvision() {
+    editId = null;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Add Provision Entry';
+    
+    const payableVendors = getPayableVendors();
+    let vendorOpts = '<option value="">Select Vendor</option>';
+    payableVendors.forEach(v => {
+        vendorOpts += `<option value="${v.code}">${v.code} - ${v.name}</option>`;
+    });
+    
+    const currentFY = getCurrentFY();
+    const monthsHtml = MONTHS.map(m => `
+        <div style="display:flex;align-items:center;gap:4px;">
+            <label style="font-size:.7rem;min-width:35px;font-weight:600;">${m}</label>
+            <input type="number" step="0.01" id="f_${m}" placeholder="0" style="width:70px;padding:4px 6px;border:1px solid #dce4ed;border-radius:4px;font-size:.75rem;">
+        </div>
+    `).join('');
+
+    document.getElementById('modalBody').innerHTML = `
+        <div class="form-group">
+            <label>Financial Year *</label>
+            <select id="f_fy">
+                ${fyList.map(fy => `<option value="${fy}" ${fy === currentFY ? 'selected' : ''}>${fy}</option>`).join('')}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Vendor *</label>
+            <select id="f_vendorCode" onchange="updateVendorDetails()">${vendorOpts}</select>
+        </div>
+        <div class="form-group">
+            <label>Location / Base *</label>
+            <input type="text" id="f_location" placeholder="e.g., DEL, NYC, MUM">
+        </div>
+        <div class="form-group">
+            <label>Service Category</label>
+            <select id="f_category">
+                <option>BA Testing</option><option>Health Checkup</option>
+                <option>Psychoactive Testing</option><option>Consulting</option>
+                <option>Lab Test</option><option>Manpower Services</option>
+                <option>Breath Analyzer</option><option>Other</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Rate (₹)</label>
+            <input type="number" id="f_rate" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label style="font-size:.8rem;font-weight:600;color:#3a5a7a;margin-bottom:6px;">Monthly Provision Amounts</label>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:#f7faff;padding:10px;border-radius:8px;border:1px solid #e8edf5;">
+                ${monthsHtml}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Remarks</label>
+            <input type="text" id="f_remarks" placeholder="Any notes...">
+        </div>
+        <input type="hidden" id="f_editId">
+    `;
+    
+    document.getElementById('provisionModal').classList.add('active');
+    document.getElementById('modalSaveBtn').onclick = saveProvision;
+}
+
+function updateVendorDetails() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    const vendor = vendors.find(v => v.code === vendorCode);
+    if (vendor) {
+        document.getElementById('f_category').value = vendor.type || 'Other';
+        document.getElementById('f_rate').value = vendor.gst || 0;
+    }
+}
+
+async function saveProvision() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    const location = document.getElementById('f_location').value.trim().toUpperCase();
+    const fy = document.getElementById('f_fy').value;
+    const category = document.getElementById('f_category').value;
+    const rate = parseFloat(document.getElementById('f_rate').value) || 0;
+    const remarks = document.getElementById('f_remarks').value || '';
+    
+    if (!vendorCode) { alert('Please select a vendor!'); return; }
+    if (!location) { alert('Please enter location!'); return; }
+    if (!fy) { alert('Please select financial year!'); return; }
+    
+    const vendor = vendors.find(v => v.code === vendorCode);
+    const months = {};
+    MONTHS.forEach(m => {
+        const val = parseFloat(document.getElementById(`f_${m}`).value) || 0;
+        months[m] = val;
+    });
+    
+    const existing = provisions.find(p => 
+        p.vendorCode === vendorCode && 
+        p.location === location && 
+        p.fy === fy
+    );
+    
+    const data = {
+        id: existing ? existing.id : generateId(),
+        vendorCode: vendorCode,
+        vendorName: vendor ? vendor.name : '',
+        location: location,
+        fy: fy,
+        category: category,
+        rate: rate,
+        months: months,
+        remarks: remarks,
+        updatedAt: new Date().toISOString(),
+        createdAt: existing ? existing.createdAt : new Date().toISOString()
+    };
+    
+    await db.put('provisions', data);
+    closeModal();
+    await loadProvision();
+    await db.triggerSync();
+    alert('✅ Provision saved successfully!');
+}
+
+async function editProvisionGroup(vendorCode, fy) {
+    const entries = provisions.filter(p => p.vendorCode === vendorCode && p.fy === fy);
+    if (!entries.length) return;
+    
+    editId = vendorCode + '|' + fy;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit Provision - ' + vendorCode + ' (' + fy + ')';
+    
+    const payableVendors = getPayableVendors();
+    let vendorOpts = '<option value="">Select Vendor</option>';
+    payableVendors.forEach(v => {
+        vendorOpts += `<option value="${v.code}" ${v.code === vendorCode ? 'selected' : ''}>${v.code} - ${v.name}</option>`;
+    });
+    
+    const aggMonths = {};
+    MONTHS.forEach(m => { aggMonths[m] = 0; });
+    entries.forEach(p => {
+        MONTHS.forEach(m => {
+            aggMonths[m] += (p.months && p.months[m]) ? parseFloat(p.months[m]) || 0 : 0;
+        });
+    });
+    
+    const monthsHtml = MONTHS.map(m => `
+        <div style="display:flex;align-items:center;gap:4px;">
+            <label style="font-size:.7rem;min-width:35px;font-weight:600;">${m}</label>
+            <input type="number" step="0.01" id="f_${m}" value="${aggMonths[m] || 0}" style="width:70px;padding:4px 6px;border:1px solid #dce4ed;border-radius:4px;font-size:.75rem;">
+        </div>
+    `).join('');
+    
+    const locations = entries.map(p => p.location).filter((v,i,a) => a.indexOf(v) === i).join(', ');
+    const firstEntry = entries[0];
+    
+    document.getElementById('modalBody').innerHTML = `
+        <div class="form-group">
+            <label>Financial Year *</label>
+            <select id="f_fy">
+                ${fyList.map(f => `<option value="${f}" ${f === fy ? 'selected' : ''}>${f}</option>`).join('')}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Vendor *</label>
+            <select id="f_vendorCode" onchange="updateVendorDetails()">${vendorOpts}</select>
+        </div>
+        <div class="form-group">
+            <label>Locations (comma separated) <span style="font-weight:400;color:#7a8fa5;">(Current: ${locations})</span></label>
+            <input type="text" id="f_locations" value="${locations}" placeholder="e.g., DEL, NYC, MUM">
+        </div>
+        <div class="form-group">
+            <label>Service Category</label>
+            <select id="f_category">
+                <option ${firstEntry.category === 'BA Testing' ? 'selected' : ''}>BA Testing</option>
+                <option ${firstEntry.category === 'Health Checkup' ? 'selected' : ''}>Health Checkup</option>
+                <option ${firstEntry.category === 'Psychoactive Testing' ? 'selected' : ''}>Psychoactive Testing</option>
+                <option ${firstEntry.category === 'Consulting' ? 'selected' : ''}>Consulting</option>
+                <option ${firstEntry.category === 'Lab Test' ? 'selected' : ''}>Lab Test</option>
+                <option ${firstEntry.category === 'Manpower Services' ? 'selected' : ''}>Manpower Services</option>
+                <option ${firstEntry.category === 'Breath Analyzer' ? 'selected' : ''}>Breath Analyzer</option>
+                <option ${firstEntry.category === 'Other' ? 'selected' : ''}>Other</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Rate (₹)</label>
+            <input type="number" id="f_rate" step="0.01" value="${firstEntry.rate || 0}" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label style="font-size:.8rem;font-weight:600;color:#3a5a7a;margin-bottom:6px;">Monthly Provision Amounts</label>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:#f7faff;padding:10px;border-radius:8px;border:1px solid #e8edf5;">
+                ${monthsHtml}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Remarks</label>
+            <input type="text" id="f_remarks" value="${firstEntry.remarks || ''}" placeholder="Any notes...">
+        </div>
+        <input type="hidden" id="f_editId" value="${editId}">
+    `;
+    
+    document.getElementById('provisionModal').classList.add('active');
+    document.getElementById('modalSaveBtn').onclick = saveEditedProvisionGroup;
+}
+
+async function saveEditedProvisionGroup() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    const locationsStr = document.getElementById('f_locations').value.trim().toUpperCase();
+    const fy = document.getElementById('f_fy').value;
+    const category = document.getElementById('f_category').value;
+    const rate = parseFloat(document.getElementById('f_rate').value) || 0;
+    const remarks = document.getElementById('f_remarks').value || '';
+    
+    if (!vendorCode) { alert('Please select a vendor!'); return; }
+    if (!locationsStr) { alert('Please enter locations!'); return; }
+    if (!fy) { alert('Please select financial year!'); return; }
+    
+    const vendor = vendors.find(v => v.code === vendorCode);
+    const locations = locationsStr.split(',').map(l => l.trim()).filter(l => l);
+    
+    const months = {};
+    MONTHS.forEach(m => {
+        const val = parseFloat(document.getElementById(`f_${m}`).value) || 0;
+        months[m] = val;
+    });
+    
+    const existing = provisions.filter(p => p.vendorCode === vendorCode && p.fy === fy);
+    for (const p of existing) {
+        await db.delete('provisions', p.id);
+    }
+    
+    for (const loc of locations) {
+        const data = {
+            id: generateId(),
+            vendorCode: vendorCode,
+            vendorName: vendor ? vendor.name : '',
+            location: loc,
+            fy: fy,
+            category: category,
+            rate: rate,
+            months: months,
+            remarks: remarks,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        await db.put('provisions', data);
+    }
+    
+    closeModal();
+    await loadProvision();
+    await db.triggerSync();
+    alert('✅ Provision updated successfully!');
+}
+
+async function deleteProvisionGroup(vendorCode, fy) {
+    if (!confirm(`⚠️ Delete all provisions for ${vendorCode} (${fy})?`)) return;
+    if (!confirm('⚠️ FINAL WARNING: This cannot be undone!')) return;
+    
+    const entries = provisions.filter(p => p.vendorCode === vendorCode && p.fy === fy);
+    for (const p of entries) {
+        await db.delete('provisions', p.id);
+    }
+    await loadProvision();
+    await db.triggerSync();
+    alert('✅ Provisions deleted!');
+}
+
+async function rolloverFY() {
+    const currentFY = getCurrentFY();
+    const parts = currentFY.split('-');
+    const nextFY = 'FY' + (parseInt(parts[0].slice(2)) + 1).toString().padStart(2,'0') + '-' + (parseInt(parts[1]) + 1).toString().padStart(2,'0');
+    
+    if (!confirm(`⚠️ Rollover from ${currentFY} to ${nextFY}?\n\nThis will carry forward March values of ${currentFY} to April of ${nextFY}.`)) return;
+    
+    const currentEntries = provisions.filter(p => p.fy === currentFY);
+    if (!currentEntries.length) {
+        alert('No provisions found for ' + currentFY);
+        return;
+    }
+    
+    let created = 0;
+    const grouped = {};
+    currentEntries.forEach(p => {
+        const key = p.vendorCode + '|' + p.location;
+        if (!grouped[key]) {
+            grouped[key] = {
+                vendorCode: p.vendorCode,
+                vendorName: p.vendorName,
+                location: p.location,
+                category: p.category,
+                rate: p.rate,
+                marValue: p.months && p.months.Mar ? parseFloat(p.months.Mar) || 0 : 0,
+                remarks: p.remarks
+            };
+        }
+    });
+    
+    for (const key in grouped) {
+        const g = grouped[key];
+        const exists = provisions.some(p => p.vendorCode === g.vendorCode && p.location === g.location && p.fy === nextFY);
+        if (!exists) {
+            const months = {};
+            MONTHS.forEach(m => {
+                months[m] = m === 'Apr' ? g.marValue : 0;
+            });
+            const data = {
+                id: generateId(),
+                vendorCode: g.vendorCode,
+                vendorName: g.vendorName,
+                location: g.location,
+                fy: nextFY,
+                category: g.category,
+                rate: g.rate,
+                months: months,
+                remarks: 'Rolled over from ' + currentFY,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            await db.put('provisions', data);
+            created++;
+        }
+    }
+    
+    if (!fyList.includes(nextFY)) {
+        fyList.push(nextFY);
+        fyList.sort();
+        updateFYDropdown();
+    }
+    
+    await loadProvision();
+    await db.triggerSync();
+    alert(`✅ Rollover complete! ${created} entries created for ${nextFY}`);
+}
+
+async function exportProvision() { await db.exportCSV('provisions'); }
+
+async function selectFolder() {
+    const handle = await db.selectFolder();
+    if (handle) document.getElementById('folderLabel').textContent = handle.name;
+}
+
+async function manualSave() {
+    await db.triggerSync();
+    alert('✅ Data saved!');
+}
+
+async function refreshData() {
+    await db.loadFromLocalStorage();
+    await loadProvision();
+    alert('✅ Data refreshed!');
+}
+
+function closeModal() {
+    document.getElementById('provisionModal').classList.remove('active');
+    editId = null;
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const savedFolder = sessionStorage.getItem('skymed_folder');
+    if (savedFolder) document.getElementById('folderLabel').textContent = savedFolder;
+    await db.loadFromLocalStorage();
+    await loadProvision();
+    setInterval(async () => {
+        await db.loadFromLocalStorage();
+        await loadProvision();
+    }, 60000);
+    document.getElementById('provisionModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+    document.getElementById('fyModal').addEventListener('click', function(e) {
+        if (e.target === this) closeFYModal();
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center;padding:10px 20px;font-size:.7rem;color:#7a8fa5;border-top:1px solid #eef3f9;margin-top:16px;';
+    footer.innerHTML = `
+        <i class="fas fa-code"></i> Developed by 
+        <a href="https://www.linkedin.com/in/ram-kumar-60072454/" target="_blank" style="color:#1a5cff;text-decoration:none;font-weight:600;">
+            Ram Kumar
+        </a>
+        &nbsp;|&nbsp;
+        <i class="fas fa-phone"></i> +91-9736438856
+    `;
+    document.querySelector('.main').appendChild(footer);
+});
+</script>
+</body>
+</html>

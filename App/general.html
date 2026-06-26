@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyMed Pro - General Entry</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="security.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+        body{background:#eef2f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:#0b2a4a;color:#fff;padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+        .sidebar .logo{padding:0 20px 20px;font-size:1.2rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sidebar .logo i{color:#7bc5f5}
+        .sidebar .logo small{font-size:.6rem;opacity:.6;font-weight:400;display:block}
+        .sidebar .nav{padding:15px 0;flex:1}
+        .sidebar .nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;border-left:3px solid transparent}
+        .sidebar .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .sidebar .nav a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .sidebar .nav a i{width:20px;text-align:center}
+        .sidebar .user{padding:15px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.8rem;display:flex;align-items:center;gap:10px}
+        .sidebar .user .name{font-weight:600}
+        .sidebar .user .role{font-size:.65rem;opacity:.6}
+        .sidebar .folder-info{padding:8px 20px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.7rem;opacity:.8}
+        .sidebar .folder-info:hover{opacity:1;background:rgba(255,255,255,.05)}
+        .sidebar .folder-info i{margin-right:6px}
+        .sidebar .folder-info .sub{font-size:.6rem;opacity:.5;display:block;margin-top:2px}
+        
+        .nav-group{position:relative}
+        .nav-group-header{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;cursor:pointer;border-left:3px solid transparent}
+        .nav-group-header:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-group-header.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub{padding-left:20px;max-height:0;overflow:hidden;transition:max-height .3s ease}
+        .nav-sub.open{max-height:300px}
+        .nav-sub a{display:flex;align-items:center;gap:12px;padding:8px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.78rem;transition:.2s;border-left:3px solid transparent}
+        .nav-sub a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-sub a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub a i{width:20px;text-align:center;font-size:.7rem}
+        
+        .main{flex:1;padding:20px 24px;overflow-y:auto;max-height:100vh}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+        .header h1{font-size:1.4rem;color:#1a3a5a}
+        .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .btn{padding:6px 16px;border:none;border-radius:30px;cursor:pointer;font-size:.8rem;transition:.2s;display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600}
+        .btn-primary{background:#2a6b9e;color:#fff}
+        .btn-primary:hover{background:#1e4f77}
+        .btn-success{background:#1e8b5c;color:#fff}
+        .btn-success:hover{background:#156a45}
+        .btn-warning{background:#d48a2e;color:#fff}
+        .btn-warning:hover{background:#b87a22}
+        .btn-danger{background:#c44545;color:#fff}
+        .btn-danger:hover{background:#a13232}
+        .btn-outline{background:transparent;border:1px solid #dce4ed;color:#3a5a7a}
+        .btn-outline:hover{background:#f5f8fc}
+        .btn-sm{padding:3px 10px;font-size:.7rem}
+        
+        .filter-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 12px;background:#f7faff;border-radius:10px;border:1px solid #e8edf5;margin-bottom:12px}
+        .filter-bar select,.filter-bar input{padding:4px 10px;border-radius:30px;border:1px solid #dce4ed;background:#fff;font-size:.75rem}
+        .filter-bar select:focus,.filter-bar input:focus{outline:0;border-color:#2a6b9e}
+        .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8edf5;height:calc(100vh - 320px);overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:1500px}
+        th{background:#f5f8fc;padding:8px 10px;text-align:left;font-weight:700;color:#3a5a7a;position:sticky;top:0;z-index:2;border-bottom:2px solid #e0e7ef;white-space:nowrap}
+        td{padding:6px 10px;border-bottom:1px solid #eef3f9}
+        tr:hover td{background:#f7faff}
+        .badge{display:inline-block;padding:1px 10px;border-radius:30px;font-size:.6rem;font-weight:700}
+        .badge-success{background:#dff0e8;color:#1a6a4a}
+        .badge-warning{background:#fdf0e0;color:#a87020}
+        .badge-danger{background:#fce8e8;color:#a84040}
+        .badge-info{background:#ddeaf5;color:#1a5a7a}
+        .badge-purple{background:#e8dff5;color:#5a3a7a}
+        .badge-cn{background:#fce8e8;color:#b33a3a;border:1px solid #c44545}
+        .badge-invoice{background:#dff0e8;color:#1a6a4a;border:1px solid #1e8b5c}
+        .badge-moved{background:#e8f8f0;color:#1a6a4a;border:1px solid #1e8b5c}
+        
+        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:#fff;border-radius:16px;padding:24px;max-width:850px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+        .modal-box h3{margin-bottom:16px;color:#1a3a5a;display:flex;align-items:center;gap:10px;font-size:1.1rem}
+        .modal-box h3 i{color:#2a6b9e}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .form-grid .full{grid-column:1/-1}
+        .form-grid label{font-size:.72rem;font-weight:600;color:#3a5a7a;display:block;margin-bottom:3px}
+        .form-grid input,.form-grid select{width:100%;padding:6px 10px;border:1px solid #dce4ed;border-radius:6px;font-size:.78rem}
+        .form-grid input:focus,.form-grid select:focus{outline:0;border-color:#2a6b9e}
+        .form-grid input[readonly]{background:#f5f8fc}
+        .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;padding-top:16px;border-top:1px solid #eef3f9}
+        .modal-actions .btn{padding:8px 24px}
+        .auto-fill-info{background:#e8f4f8;padding:8px 12px;border-radius:6px;font-size:.75rem;color:#1a5a7a;margin-bottom:10px;border-left:3px solid #2a6b9e}
+        .auto-fill-info.success{background:#e8f8f0;border-left-color:#1e8b5c;color:#1a6a4a}
+        .auto-fill-info.warning{background:#fdf0e0;border-left-color:#d48a2e;color:#a87020}
+        .calc-highlight{background:#f0f7ff;padding:2px 6px;border-radius:4px}
+        .empty-state{text-align:center;padding:30px;color:#7a8fa5}
+        .empty-state i{font-size:1.6rem;opacity:.3;display:block;margin-bottom:8px}
+        .move-btn{background:#2a6b9e;color:#fff;border:none;padding:2px 10px;border-radius:30px;cursor:pointer;font-size:.65rem}
+        .move-btn:hover{background:#1e4f77}
+        .move-btn.moved{background:#1e8b5c}
+        .cn-badge{background:#fce8e8;color:#b33a3a;padding:1px 8px;border-radius:30px;font-size:.55rem;border:1px solid #c44545}
+        
+        .autocomplete-container{position:relative}
+        .autocomplete-container input{width:100%;padding:6px 10px;border:1px solid #dce4ed;border-radius:6px;font-size:.78rem}
+        .autocomplete-container input:focus{outline:0;border-color:#2a6b9e}
+        .autocomplete-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #dce4ed;border-top:none;border-radius:0 0 6px 6px;max-height:150px;overflow-y:auto;display:none;z-index:999;box-shadow:0 4px 8px rgba(0,0,0,.1)}
+        .autocomplete-dropdown.active{display:block}
+        .autocomplete-dropdown .suggestion{padding:6px 10px;cursor:pointer;font-size:.75rem;display:flex;justify-content:space-between;border-bottom:1px solid #f0f0f0}
+        .autocomplete-dropdown .suggestion:hover{background:#f0f7ff}
+        .autocomplete-dropdown .suggestion .inv{font-weight:600;color:#1a3a5a}
+        .autocomplete-dropdown .suggestion .amt{color:#1a5cff}
+        .autocomplete-dropdown .suggestion .ven{color:#7a8fa5;font-size:.65rem}
+        .ref-preview{background:#f7faff;border:1px solid #e8edf5;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:.75rem;display:none}
+        .ref-preview.show{display:block}
+        .ref-preview .row{display:flex;justify-content:space-between;padding:2px 0}
+        .ref-preview .row .label{color:#7a8fa5}
+        .ref-preview .row .value{font-weight:600;color:#1a3a5a}
+        
+        @media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .logo small,.sidebar .nav a span,.sidebar .user .name,.sidebar .user .role,.sidebar .folder-info span{display:none}.sidebar .nav a{padding:10px 18px;justify-content:center}.sidebar .folder-info .sub{display:none}.main{padding:12px}.form-grid{grid-template-columns:1fr 1fr}}
+        @media(max-width:480px){.form-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+
+<script>
+    (function() {
+        if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    })();
+
+    function toggleSubMenu(id) {
+        const sub = document.getElementById(id);
+        const arrow = document.getElementById(id + 'Arrow');
+        if (!sub) return;
+        sub.classList.toggle('open');
+        if (arrow) {
+            arrow.style.transform = sub.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const financeSub = document.getElementById('financeSub');
+        if (financeSub) {
+            const hasActive = financeSub.querySelector('a.active');
+            if (hasActive) {
+                financeSub.classList.add('open');
+                const arrow = document.getElementById('financeArrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+</script>
+
+<div class="sidebar">
+    <div class="logo">
+        <i class="fas fa-notes-medical"></i> <span>SkyMed</span>
+        <small>v6.0</small>
+    </div>
+  <div class="nav">
+    <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+    <a href="master.html" class="active"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+    <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+    <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+    
+    <div class="nav-group">
+        <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+            <i class="fas fa-coins"></i> <span>Finance</span>
+            <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+        </div>
+        <div class="nav-sub" id="financeSub">
+            <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+            <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+            <a href="advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+            <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+        </div>
+    </div>
+    
+    <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+    <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+   <a href="assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        <a href="imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
+    <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+    <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+</div>
+    <div class="folder-info" onclick="selectFolder()">
+        <i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span>
+        <span class="sub">Click to choose folder</span>
+    </div>
+    <div class="user">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;opacity:.7;"></i>
+        <div><span class="name">Admin</span><br><span class="role">Administrator</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <h1><i class="fas fa-clipboard-list" style="color:#6c3483;"></i> General Entry</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="openModal()"><i class="fas fa-plus"></i> Add Entry</button>
+            <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-warning" onclick="exportGeneral()"><i class="fas fa-file-excel"></i> Export</button>
+            <button class="btn btn-outline" onclick="document.getElementById('csvUpload').click()"><i class="fas fa-upload"></i> Import</button>
+            <button class="btn btn-outline" onclick="manualSave()"><i class="fas fa-save"></i> Save</button>
+            <input type="file" id="csvUpload" accept=".csv,.xlsx" style="display:none" onchange="importGeneral(event)">
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <select id="filterVendor" onchange="renderGeneral()"><option value="">All Vendors</option></select>
+        <select id="filterDocType" onchange="renderGeneral()"><option value="">All Types</option><option value="Invoice">Invoice</option><option value="Credit Note">Credit Note</option><option value="Debit Note">Debit Note</option></select>
+        <select id="filterEntryType" onchange="renderGeneral()"><option value="">All Entry Types</option><option>Receivable</option><option>Payable</option></select>
+        <select id="filterStatus" onchange="renderGeneral()"><option value="">All Status</option><option>Draft</option><option>HOD Approved</option><option>Shared with Finance</option><option>Invoice Received</option></select>
+        <select id="filterServiceType" onchange="renderGeneral()"><option value="">All Services</option>
+            <option>BA Test</option><option>Charter</option><option>Crew Medical</option>
+            <option>Psychoactive Testing</option><option>MRO</option><option>Manpower Services</option>
+            <option>Breath Analyzer</option><option>Other</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Search..." oninput="renderGeneral()">
+        <button class="btn btn-primary" onclick="renderGeneral()"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn btn-outline" onclick="resetFilters()"><i class="fas fa-undo-alt"></i> Reset</button>
+        <span style="font-size:.8rem;color:#7a8fa5;margin-left:auto;" id="totalAmount">Total: ₹0</span>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Doc Type</th>
+                    <th>Ref Invoice</th>
+                    <th>Entry Type</th>
+                    <th>Service</th>
+                    <th>Vendor</th>
+                    <th>Location</th>
+                    <th>Rate Type</th>
+                    <th>Rate</th>
+                    <th>Count</th>
+                    <th>Amount</th>
+                    <th>GST%</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Invoice/CN</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="generalBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+        <h3 id="modalTitle"><i class="fas fa-plus"></i> Add General Entry</h3>
+        <div id="modalBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-success" id="modalSaveBtn" onclick="saveModal()"><i class="fas fa-save"></i> Save Entry</button>
+        </div>
+    </div>
+</div>
+
+<script src="db.js"></script>
+<script>
+let vendors = [], locations = [], generalEntries = [], editId = null;
+let dataLoaded = false;
+
+async function loadGeneral() {
+    try {
+        vendors = await db.getAll('vendors') || [];
+        locations = await db.getAll('contracts') || [];
+        generalEntries = await db.getAll('general') || [];
+        dataLoaded = true;
+        populateFilters();
+        renderGeneral();
+        console.log('📊 General loaded:', generalEntries.length);
+    } catch(e) {
+        console.error('Load failed:', e);
+        setTimeout(loadGeneral, 1000);
+    }
+}
+
+function populateFilters() {
+    const vendorSel = document.getElementById('filterVendor');
+    const current = vendorSel.value;
+    vendorSel.innerHTML = '<option value="">All Vendors</option>';
+    vendors.forEach(v => { vendorSel.innerHTML += `<option value="${v.code}">${v.code} - ${v.name}</option>`; });
+    if (current) vendorSel.value = current;
+}
+
+function resetFilters() {
+    document.getElementById('filterVendor').value = '';
+    document.getElementById('filterDocType').value = '';
+    document.getElementById('filterEntryType').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterServiceType').value = '';
+    document.getElementById('filterSearch').value = '';
+    renderGeneral();
+}
+
+function renderGeneral() {
+    if (!dataLoaded) return;
+    
+    const vendorFilter = document.getElementById('filterVendor').value;
+    const docTypeFilter = document.getElementById('filterDocType').value;
+    const entryFilter = document.getElementById('filterEntryType').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const serviceFilter = document.getElementById('filterServiceType').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+    let data = generalEntries;
+    if (vendorFilter) data = data.filter(g => g.vendorCode === vendorFilter);
+    if (docTypeFilter) data = data.filter(g => g.docType === docTypeFilter);
+    if (entryFilter) data = data.filter(g => g.entryType === entryFilter);
+    if (statusFilter) data = data.filter(g => g.status === statusFilter);
+    if (serviceFilter) data = data.filter(g => g.serviceType === serviceFilter);
+    if (search) data = data.filter(g => (g.vendorName || '').toLowerCase().includes(search) || (g.invoice || '').toLowerCase().includes(search));
+
+    const tbody = document.getElementById('generalBody');
+    let totalSum = 0;
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="15" class="empty-state"><i class="fas fa-inbox"></i>No entries found</td></tr>';
+        document.getElementById('totalAmount').textContent = 'Total: ₹0';
+        return;
+    }
+
+    let html = '';
+    data.forEach(g => {
+        const amt = parseFloat(g.amount) || 0;
+        const gst = parseFloat(g.gst) || 0;
+        const total = amt + (amt * gst / 100);
+        totalSum += total;
+        const statusBadge = g.status === 'Invoice Received' ? 'badge-success' : g.status === 'Shared with Finance' ? 'badge-purple' : g.status === 'HOD Approved' ? 'badge-info' : 'badge-warning';
+        const typeBadge = g.entryType === 'Receivable' ? 'badge-success' : 'badge-danger';
+        const isCreditNote = g.docType === 'Credit Note' || g.docType === 'Debit Note';
+        const docBadge = isCreditNote ? 'badge-cn' : 'badge-invoice';
+        const docLabel = isCreditNote ? '🧾 CN' : '📄 Inv';
+        const isOther = g.serviceType === 'Other';
+        const typeDisplay = isOther ? `${g.serviceType} (${g.otherService || ''})` : g.serviceType;
+        const refInvoice = g.refInvoice || '-';
+        
+        const showMoveBtn = g.status === 'Invoice Received' && g.invoice;
+
+        html += `<tr>
+            <td><span class="badge ${docBadge}">${docLabel} ${g.docType || 'Invoice'}</span></td>
+            <td style="font-size:.7rem;color:#7a8fa5;">${refInvoice}</td>
+            <td><span class="badge ${typeBadge}">${g.entryType || '-'}</span></td>
+            <td><span class="badge badge-info">${typeDisplay}</span></td>
+            <td><strong>${g.vendorName || '-'}</strong></td>
+            <td><span class="badge badge-info">${g.base || '-'}</span></td>
+            <td>${g.rateType || 'Fixed'}</td>
+            <td>${formatCurrency(g.rate || 0)}</td>
+            <td><strong>${g.count || 0}</strong></td>
+            <td><span class="calc-highlight" style="${amt < 0 ? 'color:#c44545;' : ''}">${formatCurrency(amt)}</span></td>
+            <td>${gst}%</td>
+            <td><strong style="${total < 0 ? 'color:#c44545;' : ''}">${formatCurrency(total)}</strong></td>
+            <td><span class="badge ${statusBadge}">${g.status || 'Draft'}</span></td>
+            <td>${g.invoice || '-'}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="editEntry('${g.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="deleteEntry('${g.id}')"><i class="fas fa-trash"></i></button>
+                ${showMoveBtn ? `<button class="btn btn-success btn-sm" onclick="moveToReceivable('${g.id}')"><i class="fas fa-arrow-right"></i> Move</button>` : ''}
+                ${isCreditNote ? `<span class="cn-badge" style="margin-left:4px;">CN</span>` : ''}
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+    document.getElementById('totalAmount').textContent = `Total: ${formatCurrency(totalSum)}`;
+}
+
+function searchInvoice(query) {
+    if (!query || query.length < 2) return [];
+    const filtered = generalEntries.filter(g => 
+        g.docType === 'Invoice' && 
+        g.invoice && 
+        g.invoice.toLowerCase().includes(query.toLowerCase())
+    );
+    return filtered.slice(0, 10);
+}
+
+function showInvoiceSuggestions() {
+    const input = document.getElementById('f_refInvoice');
+    const dropdown = document.getElementById('refInvoiceDropdown');
+    const query = input.value.trim();
+    
+    if (!query || query.length < 2) {
+        dropdown.classList.remove('active');
+        return;
+    }
+    
+    const results = searchInvoice(query);
+    if (results.length === 0) {
+        dropdown.innerHTML = `<div class="suggestion" style="color:#7a8fa5;text-align:center;">No matching invoices found</div>`;
+        dropdown.classList.add('active');
+        return;
+    }
+    
+    let html = '';
+    results.forEach(g => {
+        html += `<div class="suggestion" onclick="selectInvoice('${g.invoice}', '${g.id}')">
+            <span class="inv">${g.invoice}</span>
+            <span class="amt">${formatCurrency(g.amount)}</span>
+            <span class="ven">${g.vendorName}</span>
+        </div>`;
+    });
+    dropdown.innerHTML = html;
+    dropdown.classList.add('active');
+}
+
+async function selectInvoice(invoice, id) {
+    const entry = generalEntries.find(g => g.id === id);
+    if (!entry) return;
+    
+    const input = document.getElementById('f_refInvoice');
+    const preview = document.getElementById('refPreview');
+    const dropdown = document.getElementById('refInvoiceDropdown');
+    
+    input.value = invoice;
+    dropdown.classList.remove('active');
+    
+    const vendor = vendors.find(v => v.code === entry.vendorCode);
+    preview.innerHTML = `
+        <div class="row"><span class="label">Invoice:</span><span class="value">${entry.invoice}</span></div>
+        <div class="row"><span class="label">Vendor:</span><span class="value">${entry.vendorName}</span></div>
+        <div class="row"><span class="label">Amount:</span><span class="value" style="color:#1a5cff;">${formatCurrency(entry.amount)}</span></div>
+        <div class="row"><span class="label">Date:</span><span class="value">${entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : '-'}</span></div>
+        <div class="row" style="font-size:.65rem;color:#7a8fa5;border-top:1px solid #eef3f9;padding-top:4px;margin-top:4px;">
+            <span>💡 Use this as reference for Credit/Debit Note</span>
+        </div>
+    `;
+    preview.classList.add('show');
+    
+    if (entry.vendorCode) {
+        document.getElementById('f_vendorCode').value = entry.vendorCode;
+        document.getElementById('f_vendorCode').dispatchEvent(new Event('change'));
+    }
+    
+    if (entry.base) {
+        setTimeout(() => {
+            const baseSelect = document.getElementById('f_base');
+            const options = baseSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === entry.base) {
+                    baseSelect.value = entry.base;
+                    baseSelect.dispatchEvent(new Event('change'));
+                    break;
+                }
+            }
+        }, 300);
+    }
+    
+    if (entry.rate) document.getElementById('f_rate').value = entry.rate;
+    if (entry.gst) document.getElementById('f_gst').value = entry.gst;
+    if (entry.rateType) document.getElementById('f_rateType').value = entry.rateType;
+    if (entry.count) document.getElementById('f_count').value = entry.count;
+    
+    calcAmount();
+}
+
+document.addEventListener('click', function(e) {
+    const container = document.querySelector('.autocomplete-container');
+    if (container && !container.contains(e.target)) {
+        const dropdown = document.getElementById('refInvoiceDropdown');
+        if (dropdown) dropdown.classList.remove('active');
+    }
+});
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    editId = null;
+}
+
+function openModal() {
+    editId = null;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus"></i> Add General Entry';
+    document.getElementById('modalSaveBtn').style.display = 'inline-flex';
+    let vendorOpts = '<option value="">Select Vendor</option>';
+    vendors.forEach(v => { vendorOpts += `<option value="${v.code}">${v.code} - ${v.name}</option>`; });
+    let serviceOpts = '';
+    ['BA Test','Charter','Crew Medical','Psychoactive Testing','MRO','Manpower Services','Breath Analyzer','Other'].forEach(s => { serviceOpts += `<option value="${s}">${s}</option>`; });
+    let rateTypeOpts = '';
+    ['Per BA Test','Per Service','Per Crew Medical','Per Month','Per Day','Per Sample','Fixed'].forEach(r => { rateTypeOpts += `<option value="${r}">${r}</option>`; });
+
+    document.getElementById('modalBody').innerHTML = `
+        <div class="auto-fill-info" id="autoFillInfo"><i class="fas fa-info-circle"></i> Select Vendor & Location to auto-fill Rate, Rate Type & GST</div>
+        <div class="form-grid">
+            <div><label>Document Type *</label>
+                <select id="f_docType" onchange="toggleCreditNoteFields()">
+                    <option value="Invoice">📄 Invoice</option>
+                    <option value="Credit Note">🧾 Credit Note</option>
+                    <option value="Debit Note">📉 Debit Note</option>
+                </select>
+            </div>
+            <div id="refInvoiceDiv" style="display:none;">
+                <label>📌 Reference Invoice # <span style="color:#c44545;">*</span></label>
+                <div class="autocomplete-container">
+                    <input id="f_refInvoice" placeholder="Type invoice number..." oninput="showInvoiceSuggestions()" autocomplete="off">
+                    <div class="autocomplete-dropdown" id="refInvoiceDropdown"></div>
+                </div>
+                <div class="ref-preview" id="refPreview"></div>
+            </div>
+            <div><label>Entry Type *</label><select id="f_entryType"><option value="Receivable">Receivable</option><option value="Payable">Payable</option></select></div>
+            <div><label>Service Type *</label><select id="f_serviceType">${serviceOpts}</select></div>
+            <div><label>If Other, specify</label><input id="f_otherService" placeholder="Specify other service"></div>
+            <div><label>Vendor *</label><select id="f_vendorCode" onchange="updateAutoFill()">${vendorOpts}</select></div>
+            <div><label>Location/Base *</label><select id="f_base" onchange="updateAutoFill()"><option value="">Select location</option></select></div>
+            <div><label>Rate Type</label><select id="f_rateType">${rateTypeOpts}</select></div>
+            <div><label>Rate (₹) *</label><input id="f_rate" type="number" step="0.01" oninput="calcAmount()"></div>
+            <div><label>Count / Quantity *</label><input id="f_count" type="number" step="0.01" value="1" oninput="calcAmount()"></div>
+            <div><label>GST %</label><select id="f_gst" onchange="calcAmount()">
+                <option value="0">0%</option><option value="5">5%</option><option value="12">12%</option>
+                <option value="18" selected>18%</option><option value="28">28%</option>
+            </select></div>
+            <div><label>Amount (excl GST)</label><input id="f_amount_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="₹0.00"><input type="hidden" id="f_amount" value="0"></div>
+            <div><label>Total (incl GST)</label><input id="f_total_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="₹0.00"></div>
+            <div><label>Invoice / CN #</label><input id="f_invoice" placeholder="Invoice or Credit Note number"></div>
+            <div><label>Period (Month-Year)</label><input id="f_period" placeholder="e.g., Jul-24"></div>
+            <div><label>Status</label><select id="f_status">
+                <option value="Draft">Draft</option>
+                <option value="HOD Approved">HOD Approved</option>
+                <option value="Shared with Finance">Shared with Finance</option>
+                <option value="Invoice Received">Invoice Received</option>
+            </select></div>
+            <div><label>HOD Approval Date</label><input id="f_hodDate" type="date"></div>
+            <div><label>Shared Finance Date</label><input id="f_sharedDate" type="date"></div>
+            <div><label>Invoice Received Date</label><input id="f_invoiceDate" type="date"></div>
+            <div class="full" id="cnWarning" style="display:none;background:#fdf0e0;padding:8px 12px;border-radius:6px;border-left:3px solid #d48a2e;font-size:.75rem;color:#a87020;">
+                <i class="fas fa-info-circle"></i> <strong>Credit/Debit Note:</strong> Amount will be <strong>negative (-)</strong> automatically. <br>
+                <i class="fas fa-link"></i> <strong>Reference Invoice</strong> is required to link with original invoice.
+            </div>
+        </div>
+    `;
+    document.getElementById('modalOverlay').classList.add('active');
+    setTimeout(updateAutoFill, 100);
+}
+
+function toggleCreditNoteFields() {
+    const docType = document.getElementById('f_docType').value;
+    const warning = document.getElementById('cnWarning');
+    const refDiv = document.getElementById('refInvoiceDiv');
+    const refInput = document.getElementById('f_refInvoice');
+    const isCN = docType === 'Credit Note' || docType === 'Debit Note';
+    
+    refDiv.style.display = isCN ? 'block' : 'none';
+    refInput.required = isCN;
+    warning.style.display = isCN ? 'block' : 'none';
+    
+    if (!isCN) {
+        refInput.value = '';
+        document.getElementById('refPreview').classList.remove('show');
+        document.getElementById('refInvoiceDropdown').classList.remove('active');
+    }
+    
+    calcAmount();
+}
+
+function updateAutoFill() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    const baseSelect = document.getElementById('f_base');
+    const base = baseSelect.value;
+    const infoDiv = document.getElementById('autoFillInfo');
+
+    if (vendorCode) {
+        const locs = locations.filter(l => l.vendorCode === vendorCode);
+        const current = baseSelect.value;
+        baseSelect.innerHTML = '<option value="">Select location</option>';
+        locs.forEach(l => { baseSelect.innerHTML += `<option value="${l.base}" ${l.base === current ? 'selected' : ''}>${l.base} - ${formatCurrency(l.rate)}</option>`; });
+        if (!locs.length) baseSelect.innerHTML = '<option value="">No locations found</option>';
+    } else {
+        baseSelect.innerHTML = '<option value="">Select location</option>';
+    }
+
+    if (vendorCode && base) {
+        const loc = locations.find(l => l.vendorCode === vendorCode && l.base === base);
+        if (loc) {
+            document.getElementById('f_rate').value = loc.rate || 0;
+            document.getElementById('f_rateType').value = loc.rateType || 'Fixed';
+            document.getElementById('f_gst').value = loc.gst || 18;
+            infoDiv.innerHTML = `<i class="fas fa-check-circle" style="color:#1e8b5c;"></i> Auto-filled: Rate ₹${loc.rate} (${loc.rateType}) · GST ${loc.gst}%`;
+            infoDiv.className = 'auto-fill-info success';
+            calcAmount();
+            return;
+        }
+    }
+    infoDiv.innerHTML = `<i class="fas fa-info-circle"></i> Select Vendor & Location to auto-fill Rate, Rate Type & GST`;
+    infoDiv.className = 'auto-fill-info';
+}
+
+function calcAmount() {
+    const docType = document.getElementById('f_docType').value;
+    const rate = parseFloat(document.getElementById('f_rate').value) || 0;
+    const count = parseFloat(document.getElementById('f_count').value) || 0;
+    const gst = parseFloat(document.getElementById('f_gst').value) || 0;
+    let amount = Math.round((rate * count) * 100) / 100;
+    
+    if (docType === 'Credit Note' || docType === 'Debit Note') {
+        amount = -Math.abs(amount);
+    }
+    
+    const total = Math.round((amount + (amount * gst / 100)) * 100) / 100;
+    document.getElementById('f_amount').value = amount;
+    document.getElementById('f_amount_display').value = `₹${amount.toFixed(2)}`;
+    document.getElementById('f_amount_display').style.color = amount < 0 ? '#c44545' : '#1a3a5a';
+    document.getElementById('f_total_display').value = `₹${total.toFixed(2)}`;
+    document.getElementById('f_total_display').style.color = total < 0 ? '#c44545' : '#1a3a5a';
+}
+
+async function saveModal() {
+    const vendorCode = document.getElementById('f_vendorCode').value;
+    if (!vendorCode) { alert('Please select a vendor!'); return; }
+    const base = document.getElementById('f_base').value;
+    if (!base) { alert('Please select a location!'); return; }
+    const rate = parseFloat(document.getElementById('f_rate').value);
+    if (!rate || rate <= 0) { alert('Rate must be greater than 0!'); return; }
+    const count = parseFloat(document.getElementById('f_count').value);
+    if (!count || count <= 0) { alert('Count must be greater than 0!'); return; }
+    const amount = parseFloat(document.getElementById('f_amount').value) || 0;
+    const vendor = vendors.find(v => v.code === vendorCode);
+    const docType = document.getElementById('f_docType').value;
+    const isCN = docType === 'Credit Note' || docType === 'Debit Note';
+    
+    let refInvoice = '';
+    if (isCN) {
+        refInvoice = document.getElementById('f_refInvoice').value.trim();
+        if (!refInvoice) {
+            alert('⚠️ Reference Invoice # is required for Credit/Debit Note!');
+            document.getElementById('f_refInvoice').focus();
+            return;
+        }
+    }
+    
+    const data = {
+        id: editId || generateId(),
+        docType: docType,
+        refInvoice: refInvoice,
+        entryType: document.getElementById('f_entryType').value,
+        serviceType: document.getElementById('f_serviceType').value,
+        otherService: document.getElementById('f_otherService').value || '',
+        vendorCode: vendorCode,
+        vendorName: vendor ? vendor.name : '',
+        base: base,
+        rateType: document.getElementById('f_rateType').value || 'Fixed',
+        rate: rate,
+        count: count,
+        amount: amount,
+        gst: parseInt(document.getElementById('f_gst').value) || 18,
+        invoice: document.getElementById('f_invoice').value || '',
+        period: document.getElementById('f_period').value || '',
+        status: document.getElementById('f_status').value || 'Draft',
+        hodApprovalDate: document.getElementById('f_hodDate').value || '',
+        sharedFinanceDate: document.getElementById('f_sharedDate').value || '',
+        invoiceReceivedDate: document.getElementById('f_invoiceDate').value || '',
+        isCreditNote: isCN,
+        createdAt: new Date().toISOString()
+    };
+
+    if (editId) {
+        const existing = generalEntries.find(g => g.id === editId);
+        if (existing) Object.assign(existing, data);
+        await db.put('general', data);
+    } else {
+        await db.put('general', data);
+    }
+    closeModal();
+    await loadGeneral();
+    await db.triggerSync();
+    alert(`✅ ${docType} saved! ${isCN ? `Against Invoice: ${refInvoice} | Amount is negative (-)` : ''}`);
+}
+
+async function editEntry(id) {
+    const entry = generalEntries.find(g => g.id === id);
+    if (!entry) return;
+    editId = id;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Edit General Entry';
+    let vendorOpts = '<option value="">Select Vendor</option>';
+    vendors.forEach(v => { vendorOpts += `<option value="${v.code}" ${v.code === entry.vendorCode ? 'selected' : ''}>${v.code} - ${v.name}</option>`; });
+    let serviceOpts = '';
+    ['BA Test','Charter','Crew Medical','Psychoactive Testing','MRO','Manpower Services','Breath Analyzer','Other'].forEach(s => { serviceOpts += `<option value="${s}" ${s === entry.serviceType ? 'selected' : ''}>${s}</option>`; });
+    let rateTypeOpts = '';
+    ['Per BA Test','Per Service','Per Crew Medical','Per Month','Per Day','Per Sample','Fixed'].forEach(r => { rateTypeOpts += `<option value="${r}" ${r === entry.rateType ? 'selected' : ''}>${r}</option>`; });
+
+    let baseOpts = '<option value="">Select location</option>';
+    const locs = locations.filter(l => l.vendorCode === entry.vendorCode);
+    locs.forEach(l => { baseOpts += `<option value="${l.base}" ${l.base === entry.base ? 'selected' : ''}>${l.base}</option>`; });
+
+    const isCN = entry.docType === 'Credit Note' || entry.docType === 'Debit Note';
+
+    document.getElementById('modalBody').innerHTML = `
+        <div class="auto-fill-info" id="autoFillInfo"><i class="fas fa-info-circle"></i> Select Vendor & Location to auto-fill Rate, Rate Type & GST</div>
+        <div class="form-grid">
+            <div><label>Document Type</label>
+                <select id="f_docType" onchange="toggleCreditNoteFields()">
+                    <option value="Invoice" ${entry.docType === 'Invoice' ? 'selected' : ''}>📄 Invoice</option>
+                    <option value="Credit Note" ${entry.docType === 'Credit Note' ? 'selected' : ''}>🧾 Credit Note</option>
+                    <option value="Debit Note" ${entry.docType === 'Debit Note' ? 'selected' : ''}>📉 Debit Note</option>
+                </select>
+            </div>
+            <div id="refInvoiceDiv" style="display:${isCN ? 'block' : 'none'};">
+                <label>📌 Reference Invoice # <span style="color:#c44545;">*</span></label>
+                <div class="autocomplete-container">
+                    <input id="f_refInvoice" value="${entry.refInvoice || ''}" placeholder="Type invoice number..." oninput="showInvoiceSuggestions()" autocomplete="off">
+                    <div class="autocomplete-dropdown" id="refInvoiceDropdown"></div>
+                </div>
+                <div class="ref-preview ${isCN && entry.refInvoice ? 'show' : ''}" id="refPreview"></div>
+            </div>
+            <div><label>Entry Type</label><select id="f_entryType"><option value="Receivable" ${entry.entryType === 'Receivable' ? 'selected' : ''}>Receivable</option><option value="Payable" ${entry.entryType === 'Payable' ? 'selected' : ''}>Payable</option></select></div>
+            <div><label>Service Type</label><select id="f_serviceType">${serviceOpts}</select></div>
+            <div><label>If Other, specify</label><input id="f_otherService" value="${entry.otherService || ''}"></div>
+            <div><label>Vendor</label><select id="f_vendorCode" onchange="updateAutoFill()">${vendorOpts}</select></div>
+            <div><label>Location/Base</label><select id="f_base" onchange="updateAutoFill()">${baseOpts}</select></div>
+            <div><label>Rate Type</label><select id="f_rateType">${rateTypeOpts}</select></div>
+            <div><label>Rate (₹)</label><input id="f_rate" type="number" step="0.01" value="${entry.rate || 0}" oninput="calcAmount()"></div>
+            <div><label>Count</label><input id="f_count" type="number" step="0.01" value="${entry.count || 1}" oninput="calcAmount()"></div>
+            <div><label>GST %</label><select id="f_gst" onchange="calcAmount()">
+                <option value="0" ${entry.gst == 0 ? 'selected' : ''}>0%</option>
+                <option value="5" ${entry.gst == 5 ? 'selected' : ''}>5%</option>
+                <option value="12" ${entry.gst == 12 ? 'selected' : ''}>12%</option>
+                <option value="18" ${entry.gst == 18 ? 'selected' : ''}>18%</option>
+                <option value="28" ${entry.gst == 28 ? 'selected' : ''}>28%</option>
+            </select></div>
+            <div><label>Amount (excl GST)</label><input id="f_amount_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="${formatCurrency(entry.amount || 0)}"><input type="hidden" id="f_amount" value="${entry.amount || 0}"></div>
+            <div><label>Total (incl GST)</label><input id="f_total_display" type="text" readonly style="background:#f0f7ff;font-weight:bold;" value="${formatCurrency((entry.amount || 0) + ((entry.amount || 0) * (entry.gst || 0) / 100))}"></div>
+            <div><label>Invoice / CN #</label><input id="f_invoice" value="${entry.invoice || ''}"></div>
+            <div><label>Period</label><input id="f_period" value="${entry.period || ''}"></div>
+            <div><label>Status</label><select id="f_status">
+                <option value="Draft" ${entry.status === 'Draft' ? 'selected' : ''}>Draft</option>
+                <option value="HOD Approved" ${entry.status === 'HOD Approved' ? 'selected' : ''}>HOD Approved</option>
+                <option value="Shared with Finance" ${entry.status === 'Shared with Finance' ? 'selected' : ''}>Shared with Finance</option>
+                <option value="Invoice Received" ${entry.status === 'Invoice Received' ? 'selected' : ''}>Invoice Received</option>
+            </select></div>
+            <div><label>HOD Approval Date</label><input id="f_hodDate" type="date" value="${entry.hodApprovalDate || ''}"></div>
+            <div><label>Shared Finance Date</label><input id="f_sharedDate" type="date" value="${entry.sharedFinanceDate || ''}"></div>
+            <div><label>Invoice Received Date</label><input id="f_invoiceDate" type="date" value="${entry.invoiceReceivedDate || ''}"></div>
+            <div class="full" id="cnWarning" style="display:${isCN ? 'block' : 'none'};background:#fdf0e0;padding:8px 12px;border-radius:6px;border-left:3px solid #d48a2e;font-size:.75rem;color:#a87020;">
+                <i class="fas fa-info-circle"></i> <strong>Credit/Debit Note:</strong> Amount will be <strong>negative (-)</strong> automatically. <br>
+                <i class="fas fa-link"></i> <strong>Reference Invoice</strong> is required to link with original invoice.
+            </div>
+        </div>
+    `;
+    document.getElementById('modalOverlay').classList.add('active');
+    setTimeout(updateAutoFill, 100);
+}
+
+async function deleteEntry(id) {
+    if (!confirm('Delete this entry?')) return;
+    await db.softDelete('general', id);
+    await loadGeneral();
+    await db.triggerSync();
+    alert('✅ Entry moved to deleted records!');
+}
+
+async function moveToReceivable(id) {
+    const entry = generalEntries.find(g => g.id === id);
+    if (!entry) return;
+    
+    if (entry.status !== 'Invoice Received') {
+        alert('⚠️ Status must be "Invoice Received" before moving!');
+        return;
+    }
+    if (!entry.invoice || entry.invoice.trim() === '') {
+        alert('⚠️ Invoice/CN number is required before moving!');
+        return;
+    }
+    
+    if (entry.docType === 'Credit Note' || entry.docType === 'Debit Note') {
+        if (!confirm(`⚠️ This is a ${entry.docType} with negative amount.\nReference Invoice: ${entry.refInvoice || 'N/A'}\n\nDo you want to move it to ${entry.entryType}?`)) {
+            return;
+        }
+    }
+    
+    const targetData = entry.entryType === 'Receivable' ? 'receivables' : 'payables';
+    const existing = await db.getAll(targetData);
+    const exists = existing.some(r => r.vendorCode === entry.vendorCode && r.invoice === entry.invoice);
+    if (exists) {
+        alert('⚠️ This invoice/CN already exists in ' + entry.entryType + '!');
+        return;
+    }
+    
+    if (entry.entryType === 'Receivable') {
+        await db.moveGeneralToReceivable(entry);
+        alert(`✅ Moved to Receivables! ${entry.docType === 'Credit Note' ? '(Credit Note - Negative Amount)' : ''}`);
+    } else {
+        await db.moveGeneralToPayable(entry);
+        alert(`✅ Moved to Payables! ${entry.docType === 'Credit Note' ? '(Credit Note - Negative Amount)' : ''}`);
+    }
+    
+    await loadGeneral();
+}
+
+async function exportGeneral() { await db.exportCSV('general'); }
+
+async function importGeneral(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    await db.importCSV('general', file);
+    await loadGeneral();
+    event.target.value = '';
+}
+
+async function selectFolder() {
+    const handle = await db.selectFolder();
+    if (handle) document.getElementById('folderLabel').textContent = handle.name;
+}
+
+async function manualSave() {
+    await db.triggerSync();
+    alert('✅ Data saved!');
+}
+
+async function refreshData() {
+    await db.loadFromLocalStorage();
+    await loadGeneral();
+    alert('✅ Data refreshed!');
+}
+window.refreshData = refreshData;
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const savedFolder = sessionStorage.getItem('skymed_folder');
+    if (savedFolder) document.getElementById('folderLabel').textContent = savedFolder;
+    await db.loadFromLocalStorage();
+    await loadGeneral();
+    setInterval(async () => {
+        await db.loadFromLocalStorage();
+        await loadGeneral();
+    }, 60000);
+    document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center;padding:10px 20px;font-size:.7rem;color:#7a8fa5;border-top:1px solid #eef3f9;margin-top:16px;';
+    footer.innerHTML = `
+        <i class="fas fa-code"></i> Developed by 
+        <a href="https://www.linkedin.com/in/ram-kumar-60072454/" target="_blank" style="color:#1a5cff;text-decoration:none;font-weight:600;">
+            Ram Kumar
+        </a>
+        &nbsp;|&nbsp;
+        <i class="fas fa-phone"></i> +91-9736438856
+    `;
+    document.querySelector('.main').appendChild(footer);
+});
+</script>
+</body>
+</html>

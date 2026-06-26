@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyMed Pro - Deleted Records</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="security.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+        body{background:#eef2f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:#0b2a4a;color:#fff;padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+        .sidebar .logo{padding:0 20px 20px;font-size:1.2rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sidebar .logo i{color:#7bc5f5}
+        .sidebar .logo small{font-size:.6rem;opacity:.6;font-weight:400;display:block}
+        .sidebar .nav{padding:15px 0;flex:1}
+        .sidebar .nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;border-left:3px solid transparent}
+        .sidebar .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .sidebar .nav a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .sidebar .nav a i{width:20px;text-align:center}
+        .sidebar .user{padding:15px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.8rem;display:flex;align-items:center;gap:10px}
+        .sidebar .user .name{font-weight:600}
+        .sidebar .user .role{font-size:.65rem;opacity:.6}
+        .sidebar .folder-info{padding:8px 20px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.7rem;opacity:.8}
+        .sidebar .folder-info:hover{opacity:1;background:rgba(255,255,255,.05)}
+        .sidebar .folder-info i{margin-right:6px}
+        .sidebar .folder-info .sub{font-size:.6rem;opacity:.5;display:block;margin-top:2px}
+
+        .nav-group{position:relative}
+        .nav-group-header{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;cursor:pointer;border-left:3px solid transparent}
+        .nav-group-header:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-group-header.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub{padding-left:20px;max-height:0;overflow:hidden;transition:max-height .3s ease}
+        .nav-sub.open{max-height:300px}
+        .nav-sub a{display:flex;align-items:center;gap:12px;padding:8px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.78rem;transition:.2s;border-left:3px solid transparent}
+        .nav-sub a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-sub a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub a i{width:20px;text-align:center;font-size:.7rem}
+
+        .main{flex:1;padding:20px 24px;overflow-y:auto;max-height:100vh}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+        .header h1{font-size:1.4rem;color:#1a3a5a}
+        .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .btn{padding:6px 16px;border:none;border-radius:30px;cursor:pointer;font-size:.8rem;transition:.2s;display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600}
+        .btn-primary{background:#2a6b9e;color:#fff}
+        .btn-primary:hover{background:#1e4f77}
+        .btn-success{background:#1e8b5c;color:#fff}
+        .btn-success:hover{background:#156a45}
+        .btn-warning{background:#d48a2e;color:#fff}
+        .btn-warning:hover{background:#b87a22}
+        .btn-danger{background:#c44545;color:#fff}
+        .btn-danger:hover{background:#a13232}
+        .btn-outline{background:transparent;border:1px solid #dce4ed;color:#3a5a7a}
+        .btn-outline:hover{background:#f5f8fc}
+        .btn-sm{padding:3px 10px;font-size:.7rem}
+
+        .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8edf5;height:calc(100vh - 280px);overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:.78rem}
+        th{background:#f5f8fc;padding:8px 12px;text-align:left;font-weight:700;color:#3a5a7a;position:sticky;top:0;z-index:2;border-bottom:2px solid #e0e7ef;white-space:nowrap}
+        td{padding:6px 12px;border-bottom:1px solid #eef3f9}
+        tr:hover td{background:#f7faff}
+        .badge{display:inline-block;padding:1px 10px;border-radius:30px;font-size:.6rem;font-weight:700}
+        .badge-success{background:#dff0e8;color:#1a6a4a}
+        .badge-warning{background:#fdf0e0;color:#a87020}
+        .badge-danger{background:#fce8e8;color:#a84040}
+        .badge-info{background:#ddeaf5;color:#1a5a7a}
+        .badge-deleted{background:#fce8e8;color:#c44545;border:1px solid #c44545}
+
+        .filter-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 12px;background:#f7faff;border-radius:10px;border:1px solid #e8edf5;margin-bottom:12px}
+        .filter-bar select,.filter-bar input{padding:4px 10px;border-radius:30px;border:1px solid #dce4ed;background:#fff;font-size:.75rem}
+        .empty-state{text-align:center;padding:30px;color:#7a8fa5}
+        .empty-state i{font-size:1.6rem;opacity:.3;display:block;margin-bottom:8px}
+        .stats-bar{display:flex;gap:20px;padding:10px 16px;background:#f7faff;border-radius:10px;border:1px solid #e8edf5;margin-bottom:12px;flex-wrap:wrap}
+        .stats-bar .stat{font-size:.8rem}
+        .stats-bar .stat strong{color:#1a3a5a}
+        .toast{position:fixed;bottom:20px;right:20px;background:#1e8b5c;color:#fff;padding:12px 24px;border-radius:10px;font-size:.85rem;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+        .toast.error{background:#c44545}
+
+        @media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .logo small,.sidebar .nav a span,.sidebar .user .name,.sidebar .user .role,.sidebar .folder-info span{display:none}.sidebar .nav a{padding:10px 18px;justify-content:center}.sidebar .folder-info .sub{display:none}.main{padding:12px}}
+    </style>
+</head>
+<body>
+
+<script>
+    (function() {
+        if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    })();
+
+    function toggleSubMenu(id) {
+        const sub = document.getElementById(id);
+        const arrow = document.getElementById(id + 'Arrow');
+        if (!sub) return;
+        sub.classList.toggle('open');
+        if (arrow) {
+            arrow.style.transform = sub.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const financeSub = document.getElementById('financeSub');
+        if (financeSub) {
+            const hasActive = financeSub.querySelector('a.active');
+            if (hasActive) {
+                financeSub.classList.add('open');
+                const arrow = document.getElementById('financeArrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+</script>
+
+<div class="sidebar">
+    <div class="logo">
+        <i class="fas fa-notes-medical"></i> <span>SkyMed</span>
+        <small>v6.0</small>
+    </div>
+<div class="nav">
+    <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+    <a href="master.html" class="active"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+    <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+    <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+    
+    <div class="nav-group">
+        <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+            <i class="fas fa-coins"></i> <span>Finance</span>
+            <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+        </div>
+        <div class="nav-sub" id="financeSub">
+            <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+            <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+            <a href="advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+            <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+        </div>
+    </div>
+    
+    <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+    <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+   <a href="assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        <a href="imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
+    <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+    <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+</div>
+    <div class="folder-info" onclick="selectFolder()">
+        <i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span>
+        <span class="sub">Click to choose folder</span>
+    </div>
+    <div class="user">
+        <i class="fas fa-user-circle" style="font-size:1.4rem;opacity:.7;"></i>
+        <div><span class="name">Admin</span><br><span class="role">Administrator</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <h1><i class="fas fa-trash" style="color:#c44545;"></i> Deleted Records</h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="recoverAll()"><i class="fas fa-undo"></i> Recover All</button>
+            <button class="btn btn-danger" onclick="permanentDeleteAll()"><i class="fas fa-times"></i> Empty Deleted</button>
+            <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-outline" onclick="manualSave()"><i class="fas fa-save"></i> Save</button>
+        </div>
+    </div>
+
+    <div class="stats-bar" id="statsBar">
+        <span class="stat">Total Deleted: <strong id="totalDeleted">0</strong></span>
+        <span class="stat">From Receivables: <strong id="delReceivables">0</strong></span>
+        <span class="stat">From Payables: <strong id="delPayables">0</strong></span>
+        <span class="stat">From Contracts: <strong id="delContracts">0</strong></span>
+        <span class="stat">From General: <strong id="delGeneral">0</strong></span>
+        <span class="stat">From Vendors: <strong id="delVendors">0</strong></span>
+    </div>
+
+    <div class="filter-bar">
+        <select id="filterStore" onchange="renderDeleted()">
+            <option value="">All Types</option>
+            <option value="receivables">Receivables</option>
+            <option value="payables">Payables</option>
+            <option value="contracts">Contracts</option>
+            <option value="general">General Entry</option>
+            <option value="vendors">Vendors</option>
+        </select>
+        <input type="date" id="filterDate" onchange="renderDeleted()">
+        <input type="text" id="filterSearch" placeholder="Search..." oninput="renderDeleted()">
+        <button class="btn btn-primary" onclick="renderDeleted()"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn btn-outline" onclick="resetFilters()"><i class="fas fa-undo-alt"></i> Reset</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Deleted At</th>
+                    <th>Original Store</th>
+                    <th>Vendor</th>
+                    <th>Invoice/Location</th>
+                    <th>Amount</th>
+                    <th>Details</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="deletedBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="db.js"></script>
+<script>
+let deletedRecords = [];
+let dataLoaded = false;
+
+function formatCurrency(num) {
+    if (num === undefined || num === null || isNaN(num)) return '₹0';
+    const n = parseFloat(num);
+    if (n < 0) return '-₹' + formatCurrency(Math.abs(n));
+    const parts = n.toFixed(2).split('.');
+    const intPart = parts[0];
+    const decPart = parts[1] || '00';
+    const lastThree = intPart.slice(-3);
+    const otherNumbers = intPart.slice(0, -3);
+    const formatted = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (otherNumbers ? ',' : '') + lastThree;
+    return '₹' + formatted + '.' + decPart;
+}
+
+async function loadDeleted() {
+    try {
+        deletedRecords = await db.getAll('deletedRecords') || [];
+        dataLoaded = true;
+        updateStats();
+        renderDeleted();
+        console.log('📊 Deleted loaded:', deletedRecords.length);
+    } catch(e) {
+        console.error('Load failed:', e);
+        setTimeout(loadDeleted, 1000);
+    }
+}
+
+function updateStats() {
+    document.getElementById('totalDeleted').textContent = deletedRecords.length;
+    document.getElementById('delReceivables').textContent = deletedRecords.filter(d => d.originalStore === 'receivables').length;
+    document.getElementById('delPayables').textContent = deletedRecords.filter(d => d.originalStore === 'payables').length;
+    document.getElementById('delContracts').textContent = deletedRecords.filter(d => d.originalStore === 'contracts').length;
+    document.getElementById('delGeneral').textContent = deletedRecords.filter(d => d.originalStore === 'general').length;
+    document.getElementById('delVendors').textContent = deletedRecords.filter(d => d.originalStore === 'vendors').length;
+}
+
+function renderDeleted() {
+    if (!dataLoaded) return;
+
+    const storeFilter = document.getElementById('filterStore').value;
+    const dateFilter = document.getElementById('filterDate').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+    let data = deletedRecords;
+    if (storeFilter) data = data.filter(d => d.originalStore === storeFilter);
+    if (dateFilter) data = data.filter(d => d.deletedAt && d.deletedAt.startsWith(dateFilter));
+    if (search) data = data.filter(d =>
+        (d.vendorName || '').toLowerCase().includes(search) ||
+        (d.invoice || '').toLowerCase().includes(search) ||
+        (d.base || '').toLowerCase().includes(search)
+    );
+
+    data.sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
+
+    const tbody = document.getElementById('deletedBody');
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-inbox"></i>No deleted records found</td></tr>';
+        return;
+    }
+
+    let html = '';
+    data.forEach(d => {
+        const storeLabel = d.originalStore || 'Unknown';
+        const storeBadge = storeLabel === 'receivables' ? 'badge-success' :
+                          storeLabel === 'payables' ? 'badge-danger' :
+                          storeLabel === 'contracts' ? 'badge-info' : 'badge-warning';
+        const amount = d.amount || d.rate || 0;
+        const identifier = d.invoice || d.base || d.name || 'N/A';
+        const vendor = d.vendorName || d.name || 'Unknown';
+        const details = d.remarks || d.serviceCategory || d.rateType || '';
+
+        html += `<tr>
+            <td style="font-size:.7rem;">${d.deletedAt ? new Date(d.deletedAt).toLocaleString() : '-'}</td>
+            <td><span class="badge ${storeBadge}">${storeLabel}</span></td>
+            <td><strong>${vendor}</strong></td>
+            <td>${identifier}</td>
+            <td>${formatCurrency(amount)}</td>
+            <td style="font-size:.7rem;color:#7a8fa5;">${details}</td>
+            <td>
+                <button class="btn btn-success btn-sm" onclick="recoverRecord('${d.id}')"><i class="fas fa-undo"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="permanentDelete('${d.id}')"><i class="fas fa-times"></i></button>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+async function recoverRecord(id) {
+    if (!confirm('Recover this record?')) return;
+    const result = await db.recoverDeleted(id);
+    if (result) {
+        await loadDeleted();
+        showToast('✅ Record recovered!');
+    } else {
+        showToast('❌ Recovery failed!', true);
+    }
+}
+
+async function recoverAll() {
+    if (!deletedRecords.length) { showToast('No deleted records to recover!', true); return; }
+    if (!confirm('Recover ALL deleted records?')) return;
+    let count = 0;
+    for (const d of deletedRecords) {
+        const result = await db.recoverDeleted(d.id);
+        if (result) count++;
+    }
+    await loadDeleted();
+    showToast(`✅ ${count} records recovered!`);
+}
+
+async function permanentDelete(id) {
+    if (!confirm('Permanently delete this record? This cannot be undone!')) return;
+    await db.permanentlyDelete(id);
+    await loadDeleted();
+    showToast('✅ Record permanently deleted!');
+}
+
+async function permanentDeleteAll() {
+    if (!deletedRecords.length) { showToast('No deleted records!', true); return; }
+    if (!confirm('Permanently delete ALL deleted records? This cannot be undone!')) return;
+    if (!confirm('⚠️ FINAL WARNING: This will permanently remove all deleted records!')) return;
+    for (const d of deletedRecords) {
+        await db.permanentlyDelete(d.id);
+    }
+    await loadDeleted();
+    showToast('✅ All deleted records permanently removed!');
+}
+
+function resetFilters() {
+    document.getElementById('filterStore').value = '';
+    document.getElementById('filterDate').value = '';
+    document.getElementById('filterSearch').value = '';
+    renderDeleted();
+}
+
+async function refreshData() {
+    await db.loadFromLocalStorage();
+    await loadDeleted();
+    showToast('✅ Data refreshed!');
+}
+window.refreshData = refreshData;
+
+async function selectFolder() {
+    const handle = await db.selectFolder();
+    if (handle) document.getElementById('folderLabel').textContent = handle.name;
+}
+
+async function manualSave() {
+    await db.triggerSync();
+    showToast('✅ Data saved!');
+}
+
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toast') || (function() {
+        const t = document.createElement('div');
+        t.id = 'toast';
+        t.className = 'toast';
+        document.body.appendChild(t);
+        return t;
+    })();
+    const toastEl = document.getElementById('toast');
+    toastEl.textContent = message;
+    toastEl.className = 'toast' + (isError ? ' error' : '');
+    toastEl.style.display = 'block';
+    clearTimeout(toastEl._timer);
+    toastEl._timer = setTimeout(() => { toastEl.style.display = 'none'; }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const savedFolder = sessionStorage.getItem('skymed_folder');
+    if (savedFolder) document.getElementById('folderLabel').textContent = savedFolder;
+    await db.loadFromLocalStorage();
+    await loadDeleted();
+    setInterval(async () => {
+        await db.loadFromLocalStorage();
+        await loadDeleted();
+    }, 60000);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center;padding:10px 20px;font-size:.7rem;color:#7a8fa5;border-top:1px solid #eef3f9;margin-top:16px;';
+    footer.innerHTML = `
+        <i class="fas fa-code"></i> Developed by
+        <a href="https://www.linkedin.com/in/ram-kumar-60072454/" target="_blank" style="color:#1a5cff;text-decoration:none;font-weight:600;">
+            Ram Kumar
+        </a>
+        &nbsp;|&nbsp;
+        <i class="fas fa-phone"></i> +91-9736438856
+    `;
+    document.querySelector('.main').appendChild(footer);
+});
+</script>
+</body>
+</html>

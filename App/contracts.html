@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkyMed Pro - Contracts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="security.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+        body{background:#eef2f7;display:flex;min-height:100vh}
+        .sidebar{width:220px;background:#0b2a4a;color:#fff;padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto}
+        .sidebar .logo{padding:0 20px 20px;font-size:1.2rem;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1)}
+        .sidebar .logo i{color:#7bc5f5}
+        .sidebar .logo small{font-size:.6rem;opacity:.6;font-weight:400;display:block}
+        .sidebar .nav{padding:15px 0;flex:1}
+        .sidebar .nav a{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;border-left:3px solid transparent}
+        .sidebar .nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .sidebar .nav a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .sidebar .nav a i{width:20px;text-align:center}
+        .sidebar .user{padding:15px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.8rem;display:flex;align-items:center;gap:10px}
+        .sidebar .user .name{font-weight:600}
+        .sidebar .user .role{font-size:.65rem;opacity:.6}
+        .sidebar .folder-info{padding:8px 20px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.7rem;opacity:.8}
+        .sidebar .folder-info:hover{opacity:1;background:rgba(255,255,255,.05)}
+        .sidebar .folder-info i{margin-right:6px}
+        .sidebar .folder-info .sub{font-size:.6rem;opacity:.5;display:block;margin-top:2px}
+        
+        .nav-group{position:relative}
+        .nav-group-header{display:flex;align-items:center;gap:12px;padding:10px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;transition:.2s;cursor:pointer;border-left:3px solid transparent}
+        .nav-group-header:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-group-header.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub{padding-left:20px;max-height:0;overflow:hidden;transition:max-height .3s ease}
+        .nav-sub.open{max-height:300px}
+        .nav-sub a{display:flex;align-items:center;gap:12px;padding:8px 20px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.78rem;transition:.2s;border-left:3px solid transparent}
+        .nav-sub a:hover{background:rgba(255,255,255,.05);color:#fff}
+        .nav-sub a.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#7bc5f5}
+        .nav-sub a i{width:20px;text-align:center;font-size:.7rem}
+        
+        .main{flex:1;padding:20px 24px;overflow-y:auto;max-height:100vh}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+        .header h1{font-size:1.4rem;color:#1a3a5a}
+        .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .btn{padding:6px 16px;border:none;border-radius:30px;cursor:pointer;font-size:.8rem;transition:.2s;display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600}
+        .btn-primary{background:#2a6b9e;color:#fff}
+        .btn-primary:hover{background:#1e4f77}
+        .btn-success{background:#1e8b5c;color:#fff}
+        .btn-success:hover{background:#156a45}
+        .btn-warning{background:#d48a2e;color:#fff}
+        .btn-warning:hover{background:#b87a22}
+        .btn-danger{background:#c44545;color:#fff}
+        .btn-danger:hover{background:#a13232}
+        .btn-outline{background:transparent;border:1px solid #dce4ed;color:#3a5a7a}
+        .btn-outline:hover{background:#f5f8fc}
+        .btn-sm{padding:3px 10px;font-size:.7rem}
+        
+        .filter-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 12px;background:#f7faff;border-radius:10px;border:1px solid #e8edf5;margin-bottom:12px}
+        .filter-bar select,.filter-bar input{padding:4px 10px;border-radius:30px;border:1px solid #dce4ed;background:#fff;font-size:.75rem}
+        .filter-bar select:focus,.filter-bar input:focus{outline:0;border-color:#2a6b9e}
+        
+        .validity-notice{background:#fff8e7;border-left:5px solid #f5a623;padding:12px 20px;border-radius:10px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+        .validity-notice .notice-left{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+        .validity-notice .notice-title{font-weight:600;color:#8a6d1f;display:flex;align-items:center;gap:10px}
+        .validity-notice .notice-title i{font-size:18px}
+        .validity-notice .notice-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .validity-notice .notice-right label{font-size:.7rem;font-weight:600;color:#6b7a8f}
+        .validity-notice .notice-right select{padding:4px 12px;border-radius:30px;border:1px solid #dce4ed;font-size:.75rem;background:#fff;cursor:pointer;outline:0}
+        .validity-notice .notice-right select:focus{border-color:#2a6b9e}
+        .validity-notice .notice-right .custom-days-input{display:none;width:70px;padding:4px 10px;border-radius:30px;border:1px solid #dce4ed;font-size:.75rem;outline:0}
+        .validity-notice .notice-right .custom-days-input.show{display:inline-block}
+        .validity-notice .notice-list{display:flex;flex-wrap:wrap;gap:12px 24px;margin:6px 0;width:100%}
+        .validity-notice .notice-item{background:white;padding:4px 14px;border-radius:30px;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:6px}
+        .validity-notice .notice-item .vendor-code{font-weight:700;color:#1a5cff}
+        .validity-notice .notice-item .expiry-date{color:#b33a3a;font-weight:600}
+        .no-notice{color:#2d7a3e;font-weight:500}
+        .notice-badge{background:#f5a623;color:#fff;border-radius:30px;padding:0 12px;font-size:12px;font-weight:600}
+        
+        .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e8edf5;height:calc(100vh - 420px);overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:.78rem;min-width:1200px}
+        th{background:#f5f8fc;padding:8px 10px;text-align:left;font-weight:700;color:#3a5a7a;position:sticky;top:0;z-index:2;border-bottom:2px solid #e0e7ef;white-space:nowrap}
+        td{padding:6px 10px;border-bottom:1px solid #eef3f9;cursor:pointer}
+        tr:hover td{background:#f7faff}
+        tr.selected{background:#e6efff !important;border-left:3px solid #1a5cff}
+        
+        .badge{display:inline-block;padding:1px 10px;border-radius:30px;font-size:.6rem;font-weight:700}
+        .badge-success{background:#dff0e8;color:#1a6a4a}
+        .badge-warning{background:#fdf0e0;color:#a87020}
+        .badge-danger{background:#fce8e8;color:#a84040}
+        .badge-info{background:#ddeaf5;color:#1a5a7a}
+        .badge-purple{background:#e8dff5;color:#5a3a7a}
+        .badge-extended{background:#dbeafe;color:#1a4f9e}
+        .badge-terminated{background:#fce8e8;color:#b33a3a}
+        .badge-suspended{background:#fdf0e0;color:#a87020}
+        
+        .status-badge{background:#e4f5e9;color:#1d7a3e;padding:4px 12px;border-radius:30px;font-size:12px;font-weight:500;display:inline-block}
+        .status-badge.inactive{background:#fde8e8;color:#b33a3a}
+        .status-badge.extended{background:#dbeafe;color:#1a4f9e}
+        .status-badge.terminated{background:#fce8e8;color:#b33a3a}
+        .status-badge.suspended{background:#fdf0e0;color:#a87020}
+        
+        .vendor-code{font-size:11px;color:#6b7a8f;font-weight:400;background:#f0f2f7;padding:2px 10px;border-radius:30px;margin-left:6px}
+        .revision-badge{background:#eef2f7;padding:2px 10px;border-radius:30px;font-size:12px}
+        .view-btn{background:transparent;border:1px solid #2a6b9e;color:#2a6b9e;border-radius:30px;padding:2px 12px;font-size:11px;cursor:pointer;transition:.2s}
+        .view-btn:hover{background:#2a6b9e;color:#fff}
+        
+        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:#fff;border-radius:16px;padding:24px;max-width:700px;width:95%;max-height:95vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+        .modal-box h3{margin-bottom:16px;color:#1a3a5a;display:flex;align-items:center;gap:10px}
+        .modal-box .form-group{margin-bottom:12px}
+        .modal-box .form-group label{font-size:.78rem;font-weight:600;color:#3a5a7a;display:block;margin-bottom:4px}
+        .modal-box .form-group input,.modal-box .form-group select,.modal-box .form-group textarea{width:100%;padding:8px 12px;border:1px solid #dce4ed;border-radius:8px;font-size:.8rem}
+        .modal-box .form-group textarea{resize:vertical;min-height:50px}
+        .modal-box .form-group input:focus,.modal-box .form-group select:focus{outline:0;border-color:#2a6b9e}
+        .modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;padding-top:16px;border-top:1px solid #eef3f9}
+        .modal-actions .btn{padding:8px 20px}
+        
+        .entry-mode-tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid #eef3f9;padding-bottom:12px}
+        .entry-mode-tabs .mode-btn{background:#f5f8fc;border:1px solid #dce4ed;border-radius:30px;padding:6px 20px;font-size:.8rem;cursor:pointer;transition:.2s;font-weight:500}
+        .entry-mode-tabs .mode-btn:hover{background:#e8edf5}
+        .entry-mode-tabs .mode-btn.active{background:#2a6b9e;color:#fff;border-color:#2a6b9e}
+        
+        .entry-panel{display:none;padding:4px 0}
+        .entry-panel.active{display:block}
+        
+        .contract-info-card{background:#f7faff;border-radius:10px;padding:14px 18px;margin-bottom:16px;border:1px solid #e8edf5;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .contract-info-card .info-item{font-size:.8rem}
+        .contract-info-card .info-item .label{color:#7a8fa5;font-size:.65rem;font-weight:600;text-transform:uppercase}
+        .contract-info-card .info-item .value{font-weight:600;color:#1a3a5a}
+        
+        .action-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid #eef3f9;padding-bottom:12px}
+        .action-tabs .tab-btn{background:#f5f8fc;border:1px solid #dce4ed;border-radius:30px;padding:5px 16px;font-size:.75rem;cursor:pointer;transition:.2s;font-weight:500}
+        .action-tabs .tab-btn:hover{background:#e8edf5}
+        .action-tabs .tab-btn.active{background:#2a6b9e;color:#fff;border-color:#2a6b9e}
+        
+        .action-panel{display:none;padding:8px 0}
+        .action-panel.active{display:block}
+        
+        .history-list{max-height:200px;overflow-y:auto;margin-top:10px}
+        .history-item{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #eef3f9;font-size:.75rem;flex-wrap:wrap}
+        .history-item .h-time{color:#7a8fa5;min-width:130px}
+        .history-item .h-action{font-weight:600;color:#1a5cff;min-width:90px}
+        .history-item .h-detail{color:#1f2a3a}
+        
+        .empty-state{text-align:center;padding:30px;color:#7a8fa5}
+        .empty-state i{font-size:1.6rem;opacity:.3;display:block;margin-bottom:8px}
+        
+        .vendor-combo{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        .vendor-combo select{flex:1;min-width:150px}
+        .vendor-combo .or-divider{color:#7a8fa5;font-size:.7rem;font-weight:600}
+        .vendor-combo input{flex:1;min-width:150px}
+        .vendor-combo .new-vendor-badge{background:#1e8b5c;color:#fff;padding:2px 10px;border-radius:30px;font-size:.6rem;font-weight:600;white-space:nowrap}
+        
+        @media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .logo small,.sidebar .nav a span,.sidebar .user .name,.sidebar .user .role,.sidebar .folder-info span{display:none}.sidebar .nav a{padding:10px 18px;justify-content:center}.sidebar .folder-info .sub{display:none}.main{padding:12px}.validity-notice{flex-direction:column;align-items:stretch}.contract-info-card{grid-template-columns:1fr 1fr}}
+    </style>
+</head>
+<body>
+<script>
+    (function() {
+        if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    })();
+
+    function toggleSubMenu(id) {
+        const sub = document.getElementById(id);
+        const arrow = document.getElementById(id + 'Arrow');
+        if (!sub) return;
+        sub.classList.toggle('open');
+        if (arrow) {
+            arrow.style.transform = sub.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const financeSub = document.getElementById('financeSub');
+        if (financeSub) {
+            const hasActive = financeSub.querySelector('a.active');
+            if (hasActive) {
+                financeSub.classList.add('open');
+                const arrow = document.getElementById('financeArrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+</script>
+
+<div class="sidebar">
+    <div class="logo"><i class="fas fa-notes-medical"></i> <span>SkyMed</span><small>v6.0</small></div>
+<div class="nav">
+    <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+    <a href="master.html" class="active"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+    <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+    <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+    
+    <div class="nav-group">
+        <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+            <i class="fas fa-coins"></i> <span>Finance</span>
+            <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+        </div>
+        <div class="nav-sub" id="financeSub">
+            <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+            <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+            <a href="advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+            <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+        </div>
+    </div>
+    
+    <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+    <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+   <a href="assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        <a href="imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
+    <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+    <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+</div>
+    <div class="folder-info" onclick="selectFolder()"><i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span><span class="sub">Click to choose folder</span></div>
+    <div class="user"><i class="fas fa-user-circle" style="font-size:1.4rem;opacity:.7;"></i><div><span class="name">Admin</span><br><span class="role">Administrator</span></div></div>
+</div>
+
+<div class="main">
+    <div class="header">
+        <h1><i class="fas fa-file-signature" style="color:#1a5cff;"></i> Contracts <small style="font-size:.7rem;color:#7a8fa5;font-weight:400;">v6.0</small></h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="openAddContract()"><i class="fas fa-plus-circle"></i> Add Contract</button>
+            <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync"></i> Refresh</button>
+            <button class="btn btn-warning" onclick="exportContracts()"><i class="fas fa-file-export"></i> Export</button>
+            <button class="btn btn-outline" onclick="document.getElementById('importInput').click()"><i class="fas fa-file-import"></i> Import</button>
+            <button class="btn btn-outline" onclick="manualSave()"><i class="fas fa-save"></i> Save</button>
+            <input type="file" id="importInput" accept=".csv,.xlsx" style="display:none" onchange="importContracts(event)">
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <select id="filterVendor" onchange="renderContracts()"><option value="">All Vendors</option></select>
+        <select id="filterStatus" onchange="renderContracts()"><option value="">All Status</option>
+            <option value="Active">Active</option><option value="Inactive">Inactive</option>
+            <option value="Extended">Extended</option><option value="Terminated">Terminated</option>
+            <option value="Suspended">Suspended</option>
+        </select>
+        <select id="filterCategory" onchange="renderContracts()"><option value="">All Categories</option>
+            <option>BA Testing</option><option>Health Checkup</option><option>Psychoactive Testing</option>
+            <option>Consulting</option><option>Lab Test</option><option>Manpower Services</option>
+            <option>Breath Analyzer</option><option>Other</option>
+        </select>
+        <select id="filterLocation" onchange="renderContracts()"><option value="">All Locations</option></select>
+        <div class="search-box" style="display:flex;align-items:center;background:#fff;border-radius:30px;border:1px solid #dce4ed;padding:0 10px;">
+            <i class="fas fa-search" style="color:#8a99b0;font-size:12px;"></i>
+            <input type="text" id="filterSearch" placeholder="Search..." oninput="renderContracts()" style="border:none;padding:4px 6px;font-size:.75rem;outline:0;">
+        </div>
+        <button class="btn btn-primary" onclick="renderContracts()"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn btn-outline" onclick="resetFilters()"><i class="fas fa-undo-alt"></i> Reset</button>
+    </div>
+
+    <div id="validityNotice" class="validity-notice">
+        <div class="notice-left"><div class="notice-title"><i class="fas fa-check-circle" style="color:#2d7a3e;"></i> Loading...</div></div>
+        <div class="notice-right">
+            <label><i class="fas fa-clock"></i> Expiry Alert:</label>
+            <select id="expiryDaysSelect" onchange="updateExpiryDays()">
+                <option value="15">15 days</option><option value="30">30 days</option>
+                <option value="45">45 days</option><option value="60" selected>60 days</option>
+                <option value="90">90 days</option><option value="custom">Custom</option>
+            </select>
+            <input type="number" id="customDaysInput" class="custom-days-input" placeholder="Days" min="1" value="60" onchange="updateExpiryDays()">
+        </div>
+        <div class="notice-list" id="noticeList"></div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Vendor</th>
+                    <th>Location</th>
+                    <th>Category</th>
+                    <th>Rate Type</th>
+                    <th>Rate (₹)</th>
+                    <th>GST%</th>
+                    <th>Payment</th>
+                    <th>Valid From</th>
+                    <th>Valid Till</th>
+                    <th>Status</th>
+                    <th>Revisions</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="contractBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <h3 id="addTitle"><i class="fas fa-plus"></i> Add / Manage Contract</h3>
+        <div id="addBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeAddModal()">Cancel</button>
+            <button class="btn btn-success" id="addSaveBtn" onclick="saveAddContract()"><i class="fas fa-save"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+        <h3 id="detailTitle"><i class="fas fa-file-contract"></i> Contract Details</h3>
+        <div id="detailBody"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeDetailModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script src="db.js"></script>
+<script>
+let vendors = [], contracts = [], contractHistory = [], dataLoaded = false;
+let expiryDays = 60;
+
+async function loadContracts() {
+    try {
+        vendors = await db.getAll('vendors') || [];
+        contracts = await db.getAll('contracts') || [];
+        contractHistory = await db.getAll('contractHistory') || [];
+        dataLoaded = true;
+        populateFilters();
+        renderContracts();
+        updateValidityNotice();
+        console.log('📊 Contracts loaded:', contracts.length, 'History:', contractHistory.length);
+    } catch(e) { console.error('Load failed:', e); setTimeout(loadContracts, 1000); }
+}
+
+function populateFilters() {
+    const vendorSel = document.getElementById('filterVendor');
+    const current = vendorSel.value;
+    vendorSel.innerHTML = '<option value="">All Vendors</option>';
+    vendors.forEach(v => { vendorSel.innerHTML += `<option value="${v.code}">${v.code} - ${v.name}</option>`; });
+    if (current) vendorSel.value = current;
+
+    const locSel = document.getElementById('filterLocation');
+    const currentLoc = locSel.value;
+    const locs = [...new Set(contracts.map(c => c.base).filter(Boolean))];
+    locSel.innerHTML = '<option value="">All Locations</option>';
+    locs.forEach(l => { locSel.innerHTML += `<option value="${l}">${l}</option>`; });
+    if (currentLoc) locSel.value = currentLoc;
+}
+
+function resetFilters() {
+    document.getElementById('filterVendor').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterCategory').value = '';
+    document.getElementById('filterLocation').value = '';
+    document.getElementById('filterSearch').value = '';
+    renderContracts();
+}
+
+function updateExpiryDays() {
+    const select = document.getElementById('expiryDaysSelect');
+    const customInput = document.getElementById('customDaysInput');
+    if (select.value === 'custom') { customInput.classList.add('show'); customInput.focus(); expiryDays = parseInt(customInput.value) || 60; } 
+    else { customInput.classList.remove('show'); expiryDays = parseInt(select.value) || 60; }
+    updateValidityNotice();
+}
+
+function updateValidityNotice() {
+    const noticeList = document.getElementById('noticeList');
+    const titleDiv = document.querySelector('#validityNotice .notice-title');
+    const today = new Date();
+    const expiryLimit = new Date(today);
+    expiryLimit.setDate(today.getDate() + expiryDays);
+
+    const expiringContracts = [];
+    contracts.forEach(c => {
+        if (c.status === 'Terminated' || c.status === 'Inactive' || c.status === 'Suspended') return;
+        if (c.extended === true) return;
+        if (!c.endDate) return;
+        const expiryDate = new Date(c.endDate);
+        if (expiryDate <= expiryLimit && expiryDate >= today) {
+            expiringContracts.push({ id: c.id, vendor: c.vendorName, vendorCode: c.vendorCode, validTill: c.endDate });
+        }
+    });
+
+    if (expiringContracts.length === 0) {
+        titleDiv.innerHTML = `<i class="fas fa-check-circle" style="color:#2d7a3e;"></i> No Upcoming Expiries (Next ${expiryDays} days)`;
+        noticeList.innerHTML = `<div class="no-notice">✅ All agreements are either extended or have validity beyond ${expiryDays} days.</div>`;
+        return;
+    }
+    titleDiv.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#f5a623;"></i> ${expiringContracts.length} Contract(s) Expiring in Next ${expiryDays} Days`;
+    let listHtml = '';
+    expiringContracts.forEach(item => {
+        const daysLeft = Math.ceil((new Date(item.validTill) - new Date()) / (1000 * 60 * 60 * 24));
+        listHtml += `<span class="notice-item"><span class="vendor-code">${item.vendorCode}</span> ${item.vendor} <span class="expiry-date">⚠️ Expires: ${item.validTill}</span> <span class="notice-badge" style="${daysLeft <= 7 ? 'background:#c44545;' : ''}">${daysLeft} days left</span></span>`;
+    });
+    noticeList.innerHTML = listHtml;
+}
+
+function renderContracts() {
+    if (!dataLoaded) return;
+    const vendorFilter = document.getElementById('filterVendor').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const categoryFilter = document.getElementById('filterCategory').value;
+    const locationFilter = document.getElementById('filterLocation').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+    let data = contracts;
+    if (vendorFilter) data = data.filter(c => c.vendorCode === vendorFilter);
+    if (statusFilter) data = data.filter(c => c.status === statusFilter);
+    if (categoryFilter) data = data.filter(c => c.serviceCategory === categoryFilter);
+    if (locationFilter) data = data.filter(c => c.base === locationFilter);
+    if (search) data = data.filter(c => (c.vendorName || '').toLowerCase().includes(search) || (c.base || '').toLowerCase().includes(search));
+
+    const tbody = document.getElementById('contractBody');
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="12" class="empty-state"><i class="fas fa-inbox"></i>No contracts found</td></tr>';
+        return;
+    }
+
+    let html = '';
+    data.forEach(c => {
+        const status = c.status || 'Active';
+        const statusClass = status === 'Active' ? '' : status === 'Extended' ? 'extended' : status === 'Terminated' ? 'terminated' : status === 'Suspended' ? 'suspended' : 'inactive';
+        const revisionCount = c.revisions || 0;
+        html += `<tr onclick="openDetailModal('${c.id}')" style="cursor:pointer;">
+            <td><strong>${c.vendorName || '-'}</strong><span class="vendor-code">${c.vendorCode || '-'}</span></td>
+            <td><span class="badge badge-info">${c.base || '-'}</span></td>
+            <td>${c.serviceCategory || '-'}</td>
+            <td>${c.rateType || 'Fixed'}</td>
+            <td>₹${(c.rate || 0).toFixed(2)}</td>
+            <td>${c.gst || 18}%</td>
+            <td>${c.paymentPeriod || 30} days</td>
+            <td>${c.startDate || '-'}</td>
+            <td class="valid-till-cell">${c.endDate || '-'}</td>
+            <td><span class="status-badge ${statusClass}" id="status-${c.id}">${status}</span></td>
+            <td><span class="revision-badge">${revisionCount}</span></td>
+            <td><button class="view-btn" onclick="event.stopPropagation();openDetailModal('${c.id}')"><i class="fas fa-eye"></i> Manage</button></td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+function openAddContract() {
+    document.getElementById('addTitle').innerHTML = '<i class="fas fa-plus"></i> Add / Manage Contract';
+    
+    let vendorOpts = '<option value="">Select Existing Vendor</option>';
+    vendors.forEach(v => { vendorOpts += `<option value="${v.code}">${v.code} - ${v.name}</option>`; });
+    
+    let contractOpts = '<option value="">Select Existing Contract</option>';
+    const activeContracts = contracts.filter(c => c.status === 'Active' || c.status === 'Extended');
+    activeContracts.forEach(c => { contractOpts += `<option value="${c.id}">${c.vendorCode} - ${c.base} (${c.status})</option>`; });
+
+    document.getElementById('addBody').innerHTML = `
+        <div class="entry-mode-tabs">
+            <button class="mode-btn active" onclick="switchEntryMode('manual')">✏️ Manual Entry</button>
+            <button class="mode-btn" onclick="switchEntryMode('existing')">📂 From Existing</button>
+        </div>
+
+        <div class="entry-panel active" id="panel-manual">
+            <div class="form-group">
+                <label>Vendor *</label>
+                <div class="vendor-combo">
+                    <select id="a_vendorSelect" onchange="onVendorSelectChange()">
+                        ${vendorOpts}
+                        <option value="__new__">➕ Add New Vendor</option>
+                    </select>
+                    <span class="or-divider">OR</span>
+                    <input type="text" id="a_vendorManual" placeholder="Type new vendor name..." style="display:none;" oninput="onVendorManualInput()">
+                    <span id="a_newVendorBadge" class="new-vendor-badge" style="display:none;">🆕 New</span>
+                </div>
+                <input type="hidden" id="a_vendorCode">
+            </div>
+            <div class="form-group">
+                <label>Location/Base *</label>
+                <input type="text" id="a_base" placeholder="e.g., DEL, NYC">
+            </div>
+            <div class="form-group">
+                <label>Service Category</label>
+                <select id="a_category">
+                    <option>BA Testing</option><option>Health Checkup</option>
+                    <option>Psychoactive Testing</option><option>Consulting</option>
+                    <option>Lab Test</option><option>Manpower Services</option>
+                    <option>Breath Analyzer</option><option>Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Rate Type</label>
+                <select id="a_rateType">
+                    <option>Per BA Test</option><option>Per Service</option>
+                    <option>Per Crew Medical</option><option>Per Month</option>
+                    <option>Per Day</option><option>Per Sample</option><option>Fixed</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Rate (₹) *</label>
+                <input type="number" id="a_rate" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label>GST %</label>
+                <select id="a_gst">
+                    <option value="0">0%</option><option value="5">5%</option>
+                    <option value="12">12%</option><option value="18" selected>18%</option>
+                    <option value="28">28%</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Payment Period (days)</label>
+                <input type="number" id="a_paymentPeriod" value="30">
+            </div>
+            <div class="form-group">
+                <label>Valid From</label>
+                <input type="date" id="a_startDate">
+            </div>
+            <div class="form-group">
+                <label>Valid Till</label>
+                <input type="date" id="a_endDate">
+            </div>
+            <input type="hidden" id="a_actionType" value="manual">
+        </div>
+
+        <div class="entry-panel" id="panel-existing">
+            <div class="form-group">
+                <label>Select Existing Contract *</label>
+                <select id="a_existingContract">${contractOpts}</select>
+            </div>
+            <div class="form-group">
+                <label>Action Type *</label>
+                <select id="a_existingAction" onchange="toggleExistingActionFields()">
+                    <option value="addendum">📄 Addendum</option>
+                    <option value="extension">⏳ Extension</option>
+                    <option value="termination">❌ Termination</option>
+                    <option value="suspension">⏸️ Suspension</option>
+                    <option value="others">📌 Others</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Reason / Details *</label>
+                <textarea id="a_existingReason" rows="2" placeholder="Enter reason for this action..."></textarea>
+            </div>
+            <div id="a_revisedRateGroup" class="form-group">
+                <label>Revised Rate (₹) <span style="font-weight:400;color:#7a8fa5;">(leave blank if same)</span></label>
+                <input type="number" id="a_revisedRate" step="0.01" placeholder="New rate">
+            </div>
+            <div id="a_revisedTermsGroup" class="form-group">
+                <label>Revised Terms</label>
+                <textarea id="a_revisedTerms" rows="2" placeholder="Revised terms and conditions..."></textarea>
+            </div>
+            <div id="a_newExpiryGroup" class="form-group">
+                <label>New Expiry Date</label>
+                <input type="date" id="a_newExpiry">
+            </div>
+            <div id="a_othersGroup" class="form-group" style="display:none;">
+                <label>Specify Action</label>
+                <input type="text" id="a_othersSpecify" placeholder="e.g., Renegotiation, Amendment">
+            </div>
+            <input type="hidden" id="a_actionType" value="existing">
+        </div>
+    `;
+    
+    document.getElementById('addModal').classList.add('active');
+    document.getElementById('addSaveBtn').onclick = saveAddContract;
+    setTimeout(toggleExistingActionFields, 100);
+}
+
+function onVendorSelectChange() {
+    const select = document.getElementById('a_vendorSelect');
+    const manualInput = document.getElementById('a_vendorManual');
+    const badge = document.getElementById('a_newVendorBadge');
+    const hidden = document.getElementById('a_vendorCode');
+    
+    if (select.value === '__new__') {
+        manualInput.style.display = 'block';
+        manualInput.focus();
+        badge.style.display = 'inline-block';
+        hidden.value = '';
+    } else {
+        manualInput.style.display = 'none';
+        badge.style.display = 'none';
+        hidden.value = select.value;
+    }
+}
+
+function onVendorManualInput() {
+    const input = document.getElementById('a_vendorManual');
+    const hidden = document.getElementById('a_vendorCode');
+    hidden.value = '';
+}
+
+function switchEntryMode(mode) {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.entry-panel').forEach(p => p.classList.remove('active'));
+    
+    if (mode === 'manual') {
+        document.querySelector('.mode-btn[onclick*="manual"]').classList.add('active');
+        document.getElementById('panel-manual').classList.add('active');
+    } else {
+        document.querySelector('.mode-btn[onclick*="existing"]').classList.add('active');
+        document.getElementById('panel-existing').classList.add('active');
+    }
+}
+
+function toggleExistingActionFields() {
+    const action = document.getElementById('a_existingAction').value;
+    const revisedRate = document.getElementById('a_revisedRateGroup');
+    const revisedTerms = document.getElementById('a_revisedTermsGroup');
+    const newExpiry = document.getElementById('a_newExpiryGroup');
+    const othersGroup = document.getElementById('a_othersGroup');
+    
+    revisedRate.style.display = 'block';
+    revisedTerms.style.display = 'block';
+    newExpiry.style.display = 'block';
+    othersGroup.style.display = 'none';
+    
+    if (action === 'addendum' || action === 'extension') {
+        // All visible
+    } else if (action === 'termination' || action === 'suspension' || action === 'others') {
+        revisedRate.style.display = 'none';
+        revisedTerms.style.display = 'none';
+        newExpiry.style.display = 'none';
+        if (action === 'others') {
+            othersGroup.style.display = 'block';
+        }
+    }
+}
+
+async function saveAddContract() {
+    const isManual = document.getElementById('panel-manual').classList.contains('active');
+    
+    if (isManual) {
+        const select = document.getElementById('a_vendorSelect');
+        const manualInput = document.getElementById('a_vendorManual');
+        const base = document.getElementById('a_base').value.trim().toUpperCase();
+        const rate = parseFloat(document.getElementById('a_rate').value);
+        const startDate = document.getElementById('a_startDate').value;
+        const endDate = document.getElementById('a_endDate').value;
+        
+        if (!base) { alert('Location is required!'); return; }
+        if (!rate || rate <= 0) { alert('Rate must be greater than 0!'); return; }
+        if (!startDate || !endDate) { alert('Please select valid from and till dates!'); return; }
+        
+        let vendorCode = select.value;
+        let vendorName = '';
+        
+        if (select.value === '__new__') {
+            vendorName = manualInput.value.trim();
+            if (!vendorName) { alert('Please enter vendor name!'); return; }
+            
+            const existing = vendors.find(v => v.name.toLowerCase() === vendorName.toLowerCase());
+            if (existing) {
+                vendorCode = existing.code;
+                vendorName = existing.name;
+            } else {
+                vendorCode = await db.generateVendorCode();
+                const newVendor = {
+                    id: generateId(),
+                    code: vendorCode,
+                    name: vendorName,
+                    type: document.getElementById('a_category').value,
+                    gst: parseInt(document.getElementById('a_gst').value) || 18,
+                    paymentPeriod: parseInt(document.getElementById('a_paymentPeriod').value) || 30,
+                    contact: '',
+                    email: '',
+                    address: '',
+                    createdAt: new Date().toISOString()
+                };
+                await db.put('vendors', newVendor);
+                vendors = await db.getAll('vendors');
+            }
+        } else {
+            const vendor = vendors.find(v => v.code === vendorCode);
+            vendorName = vendor ? vendor.name : '';
+        }
+        
+        const contractData = {
+            id: generateId(),
+            vendorCode: vendorCode,
+            vendorName: vendorName,
+            base: base,
+            serviceCategory: document.getElementById('a_category').value,
+            rateType: document.getElementById('a_rateType').value,
+            rate: rate,
+            gst: parseInt(document.getElementById('a_gst').value) || 18,
+            paymentPeriod: parseInt(document.getElementById('a_paymentPeriod').value) || 30,
+            startDate: startDate,
+            endDate: endDate,
+            status: 'Active',
+            extended: false,
+            revisions: 0,
+            createdAt: new Date().toISOString()
+        };
+        await db.put('contracts', contractData);
+        await db.addContractHistory(contractData.id, vendorCode, vendorName, 'Created', 'New contract created', new Date().toISOString().split('T')[0], null, { status: 'Active', endDate: endDate });
+        closeAddModal();
+        await loadContracts();
+        await db.triggerSync();
+        alert(`✅ New contract added successfully! Vendor: ${vendorName} (${vendorCode})`);
+        return;
+    }
+    
+    const contractId = document.getElementById('a_existingContract').value;
+    const action = document.getElementById('a_existingAction').value;
+    const reason = document.getElementById('a_existingReason').value.trim();
+    
+    if (!contractId) { alert('Please select an existing contract!'); return; }
+    if (!reason) { alert('Please enter reason for this action!'); return; }
+    
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) { alert('Contract not found!'); return; }
+    
+    let detail = '';
+    let newStatus = contract.status;
+    
+    if (action === 'addendum') {
+        const revisedRate = document.getElementById('a_revisedRate').value;
+        const revisedTerms = document.getElementById('a_revisedTerms').value.trim();
+        contract.revisions = (contract.revisions || 0) + 1;
+        if (revisedRate) contract.rate = parseFloat(revisedRate);
+        await db.put('contracts', contract);
+        detail = `Addendum → Reason: ${reason} | Revised Rate: ${revisedRate || 'N/A'} | Revised Terms: ${revisedTerms || 'N/A'}`;
+    } else if (action === 'extension') {
+        const revisedRate = document.getElementById('a_revisedRate').value;
+        const revisedTerms = document.getElementById('a_revisedTerms').value.trim();
+        const newExpiry = document.getElementById('a_newExpiry').value;
+        if (!newExpiry) { alert('Please select new expiry date!'); return; }
+        contract.endDate = newExpiry;
+        contract.extended = true;
+        contract.status = 'Extended';
+        contract.revisions = (contract.revisions || 0) + 1;
+        if (revisedRate) contract.rate = parseFloat(revisedRate);
+        await db.put('contracts', contract);
+        detail = `Extension → Reason: ${reason} | New Expiry: ${newExpiry} | Revised Rate: ${revisedRate || 'N/A'} | Revised Terms: ${revisedTerms || 'N/A'}`;
+        newStatus = 'Extended';
+    } else if (action === 'termination') {
+        contract.status = 'Terminated';
+        contract.revisions = (contract.revisions || 0) + 1;
+        await db.put('contracts', contract);
+        detail = `Termination → Reason: ${reason}`;
+        newStatus = 'Terminated';
+    } else if (action === 'suspension') {
+        contract.status = 'Suspended';
+        contract.suspensionReason = reason;
+        contract.revisions = (contract.revisions || 0) + 1;
+        await db.put('contracts', contract);
+        detail = `Suspension → Reason: ${reason}`;
+        newStatus = 'Suspended';
+    } else if (action === 'others') {
+        const specify = document.getElementById('a_othersSpecify').value.trim();
+        if (!specify) { alert('Please specify the action!'); return; }
+        contract.revisions = (contract.revisions || 0) + 1;
+        await db.put('contracts', contract);
+        detail = `Others (${specify}) → ${reason}`;
+    }
+    
+    await db.addContractHistory(contractId, contract.vendorCode, contract.vendorName, action.charAt(0).toUpperCase() + action.slice(1), detail, new Date().toISOString().split('T')[0], null, { status: newStatus, endDate: contract.endDate });
+    
+    closeAddModal();
+    await loadContracts();
+    await db.triggerSync();
+    alert(`✅ ${action.charAt(0).toUpperCase() + action.slice(1)} applied successfully!`);
+}
+
+function openDetailModal(contractId) {
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) { alert('Contract not found!'); return; }
+    
+    const history = contractHistory.filter(h => h.contractId === contractId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    document.getElementById('detailTitle').innerHTML = `<i class="fas fa-file-contract"></i> ${contract.vendorName} (${contract.vendorCode})`;
+    
+    let historyHtml = '';
+    if (history.length === 0) {
+        historyHtml = '<div class="empty-state" style="padding:10px;"><i class="fas fa-inbox"></i>No history recorded</div>';
+    } else {
+        historyHtml = '<div class="history-list">';
+        history.forEach(h => {
+            const date = h.date || h.createdAt || '';
+            const displayDate = date ? new Date(date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            historyHtml += `<div class="history-item">
+                <span class="h-time"><i class="far fa-clock"></i> ${displayDate}</span>
+                <span class="h-action">${h.type || 'Action'}</span>
+                <span class="h-detail">${h.details || ''}</span>
+            </div>`;
+        });
+        historyHtml += '</div>';
+    }
+
+    document.getElementById('detailBody').innerHTML = `
+        <div class="contract-info-card">
+            <div class="info-item"><div class="label">Vendor Code</div><div class="value">${contract.vendorCode}</div></div>
+            <div class="info-item"><div class="label">Location</div><div class="value">${contract.base || '-'}</div></div>
+            <div class="info-item"><div class="label">Category</div><div class="value">${contract.serviceCategory || '-'}</div></div>
+            <div class="info-item"><div class="label">Rate</div><div class="value">₹${(contract.rate || 0).toFixed(2)} (${contract.rateType || 'Fixed'})</div></div>
+            <div class="info-item"><div class="label">GST</div><div class="value">${contract.gst || 18}%</div></div>
+            <div class="info-item"><div class="label">Payment Period</div><div class="value">${contract.paymentPeriod || 30} days</div></div>
+            <div class="info-item"><div class="label">Valid From</div><div class="value">${contract.startDate || '-'}</div></div>
+            <div class="info-item"><div class="label">Valid Till</div><div class="value"><strong>${contract.endDate || '-'}</strong></div></div>
+            <div class="info-item"><div class="label">Status</div><div class="value"><span class="status-badge ${contract.status === 'Active' ? '' : contract.status === 'Extended' ? 'extended' : contract.status === 'Terminated' ? 'terminated' : contract.status === 'Suspended' ? 'suspended' : 'inactive'}">${contract.status || 'Active'}</span></div></div>
+        </div>
+
+        <div class="action-tabs">
+            <button class="tab-btn active" onclick="switchDetailTab('addendum')">📄 Addendum</button>
+            <button class="tab-btn" onclick="switchDetailTab('extension')">⏳ Extension</button>
+            <button class="tab-btn" onclick="switchDetailTab('termination')">❌ Termination</button>
+            <button class="tab-btn" onclick="switchDetailTab('suspension')">⏸️ Suspension</button>
+            <button class="tab-btn" onclick="switchDetailTab('others')">📌 Others</button>
+        </div>
+
+        <div class="action-panel active" id="dpanel-addendum">
+            <div class="form-group"><label>Reason for Addendum *</label><textarea id="d_add_reason" rows="2" placeholder="Why is this addendum needed?"></textarea></div>
+            <div class="form-group"><label>Revised Rate (₹) <span style="font-weight:400;color:#7a8fa5;">(leave blank if same)</span></label><input type="number" id="d_add_revisedRate" step="0.01" placeholder="New rate"></div>
+            <div class="form-group"><label>Revised Terms</label><textarea id="d_add_revisedTerms" rows="2" placeholder="Updated terms and conditions..."></textarea></div>
+            <button class="btn btn-primary" onclick="applyDetailAction('addendum','${contractId}')"><i class="fas fa-save"></i> Apply Addendum</button>
+        </div>
+
+        <div class="action-panel" id="dpanel-extension">
+            <div class="form-group"><label>Reason for Extension *</label><textarea id="d_ext_reason" rows="2" placeholder="Why is this extension needed?"></textarea></div>
+            <div class="form-group"><label>New Expiry Date *</label><input type="date" id="d_ext_newExpiry"></div>
+            <div class="form-group"><label>Revised Rate (₹) <span style="font-weight:400;color:#7a8fa5;">(leave blank if same)</span></label><input type="number" id="d_ext_revisedRate" step="0.01" placeholder="New rate"></div>
+            <div class="form-group"><label>Revised Terms</label><textarea id="d_ext_revisedTerms" rows="2" placeholder="Updated terms and conditions..."></textarea></div>
+            <button class="btn btn-primary" onclick="applyDetailAction('extension','${contractId}')"><i class="fas fa-save"></i> Apply Extension</button>
+        </div>
+
+        <div class="action-panel" id="dpanel-termination">
+            <div class="form-group"><label>Reason for Termination *</label><textarea id="d_term_reason" rows="2" placeholder="Why is this contract being terminated?"></textarea></div>
+            <button class="btn btn-danger" onclick="applyDetailAction('termination','${contractId}')"><i class="fas fa-times"></i> Apply Termination</button>
+        </div>
+
+        <div class="action-panel" id="dpanel-suspension">
+            <div class="form-group"><label>Reason for Suspension *</label><textarea id="d_sus_reason" rows="2" placeholder="Why is this contract being suspended?"></textarea></div>
+            <button class="btn btn-warning" onclick="applyDetailAction('suspension','${contractId}')"><i class="fas fa-pause"></i> Apply Suspension</button>
+        </div>
+
+        <div class="action-panel" id="dpanel-others">
+            <div class="form-group"><label>Specify Action *</label><input type="text" id="d_others_action" placeholder="e.g., Renegotiation, Amendment"></div>
+            <div class="form-group"><label>Details *</label><textarea id="d_others_details" rows="2" placeholder="Provide details..."></textarea></div>
+            <button class="btn btn-primary" onclick="applyDetailAction('others','${contractId}')"><i class="fas fa-save"></i> Apply</button>
+        </div>
+
+        <div style="margin-top:16px;border-top:1px solid #eef3f9;padding-top:12px;">
+            <h4 style="font-size:.85rem;color:#1a3a5a;display:flex;align-items:center;gap:8px;margin-bottom:8px;"><i class="fas fa-history" style="color:#1a5cff;"></i> Contract History (${history.length} entries)</h4>
+            ${historyHtml}
+        </div>
+    `;
+
+    document.getElementById('detailModal').classList.add('active');
+}
+
+function switchDetailTab(tab) {
+    document.querySelectorAll('#detailModal .action-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#detailModal .action-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`#detailModal .action-tabs .tab-btn[onclick*="${tab}"]`)?.classList.add('active');
+    document.getElementById(`dpanel-${tab}`)?.classList.add('active');
+}
+
+async function applyDetailAction(actionType, contractId) {
+    const contract = contracts.find(c => c.id === contractId);
+    if (!contract) { alert('Contract not found!'); return; }
+
+    let detail = '';
+    let reason = '';
+
+    if (actionType === 'addendum') {
+        reason = document.getElementById('d_add_reason').value.trim();
+        if (!reason) { alert('Please enter reason for addendum!'); return; }
+        const revisedRate = document.getElementById('d_add_revisedRate').value;
+        const revisedTerms = document.getElementById('d_add_revisedTerms').value.trim();
+        contract.revisions = (contract.revisions || 0) + 1;
+        if (revisedRate) contract.rate = parseFloat(revisedRate);
+        await db.put('contracts', contract);
+        detail = `Addendum → Reason: ${reason} | Revised Rate: ${revisedRate || 'N/A'} | Revised Terms: ${revisedTerms || 'N/A'}`;
+    } else if (actionType === 'extension') {
+        reason = document.getElementById('d_ext_reason').value.trim();
+        if (!reason) { alert('Please enter reason for extension!'); return; }
+        const newExpiry = document.getElementById('d_ext_newExpiry').value;
+        if (!newExpiry) { alert('Please select new expiry date!'); return; }
+        const revisedRate = document.getElementById('d_ext_revisedRate').value;
+        const revisedTerms = document.getElementById('d_ext_revisedTerms').value.trim();
+        contract.endDate = newExpiry;
+        contract.extended = true;
+        contract.status = 'Extended';
+        contract.revisions = (contract.revisions || 0) + 1;
+        if (revisedRate) contract.rate = parseFloat(revisedRate);
+        await db.put('contracts', contract);
+        detail = `Extension → Reason: ${reason} | New Expiry: ${newExpiry} | Revised Rate: ${revisedRate || 'N/A'} | Revised Terms: ${revisedTerms || 'N/A'}`;
+    } else if (actionType === 'termination') {
+        reason = document.getElementById('d_term_reason').value.trim();
+        if (!reason) { alert('Please enter reason for termination!'); return; }
+        contract.status = 'Terminated';
+        contract.revisions = (contract.revisions || 0) + 1;
+        await db.put('contracts', contract);
+        detail = `Termination → Reason: ${reason}`;
+    } else if (actionType === 'suspension') {
+        reason = document.getElementById('d_sus_reason').value.trim();
+        if (!reason) { alert('Please enter reason for suspension!'); return; }
+        contract.status = 'Suspended';
+        contract.suspensionReason = reason;
+        contract.revisions = (contract.revisions || 0) + 1;
+        await db.put('contracts', contract);
+        detail = `Suspension → Reason: ${reason}`;
+    } else if (actionType === 'others') {
+        const actionLabel = document.getElementById('d_others_action').value.trim();
+        const details = document.getElementById('d_others_details').value.trim();
+        if (!actionLabel) { alert('Please specify the action!'); return; }
+        if (!details) { alert('Please provide details!'); return; }
+        contract.revisions = (contract.revisions || 0) + 1;
+        await db.put('contracts', contract);
+        detail = `Others (${actionLabel}) → ${details}`;
+    }
+
+    await db.addContractHistory(contractId, contract.vendorCode, contract.vendorName, actionType.charAt(0).toUpperCase() + actionType.slice(1), detail, new Date().toISOString().split('T')[0], null, { status: contract.status, endDate: contract.endDate });
+
+    closeDetailModal();
+    await loadContracts();
+    await db.triggerSync();
+    alert(`✅ ${actionType.charAt(0).toUpperCase() + actionType.slice(1)} applied successfully!`);
+}
+
+function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+function closeDetailModal() { document.getElementById('detailModal').classList.remove('active'); }
+
+async function exportContracts() { await db.exportCSV('contracts'); }
+async function importContracts(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    await db.importCSV('contracts', file);
+    await loadContracts();
+    event.target.value = '';
+}
+async function selectFolder() { const handle = await db.selectFolder(); if (handle) document.getElementById('folderLabel').textContent = handle.name; }
+async function manualSave() { await db.triggerSync(); alert('✅ Data saved!'); }
+async function refreshData() { await db.loadFromLocalStorage(); await loadContracts(); alert('✅ Data refreshed!'); }
+window.refreshData = refreshData;
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const savedFolder = sessionStorage.getItem('skymed_folder');
+    if (savedFolder) document.getElementById('folderLabel').textContent = savedFolder;
+    document.getElementById('expiryDaysSelect').value = '60';
+    expiryDays = 60;
+    await db.loadFromLocalStorage();
+    await loadContracts();
+    setInterval(async () => { await db.loadFromLocalStorage(); await loadContracts(); }, 60000);
+    document.getElementById('addModal').addEventListener('click', function(e) { if (e.target === this) closeAddModal(); });
+    document.getElementById('detailModal').addEventListener('click', function(e) { if (e.target === this) closeDetailModal(); });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center;padding:10px 20px;font-size:.7rem;color:#7a8fa5;border-top:1px solid #eef3f9;margin-top:16px;';
+    footer.innerHTML = `
+        <i class="fas fa-code"></i> Developed by 
+        <a href="https://www.linkedin.com/in/ram-kumar-60072454/" target="_blank" style="color:#1a5cff;text-decoration:none;font-weight:600;">
+            Ram Kumar
+        </a>
+        &nbsp;|&nbsp;
+        <i class="fas fa-phone"></i> +91-9736438856
+    `;
+    document.querySelector('.main').appendChild(footer);
+});
+</script>
+</body>
+</html>
