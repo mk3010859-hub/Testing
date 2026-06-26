@@ -1,0 +1,133 @@
+# ============================================================
+# SKYMED PRO - .gitignore
+# ============================================================
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
+*.tmp
+*.temp
+*.log
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Node Modules (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Build & Distribution
+dist/
+build/
+*.min.js
+*.min.css
+*.map
+
+# Backup Files
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.patch
+
+# Temporary Files
+*.cache
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+*.indexeddb
+
+# Logs
+*.log
+logs/
+debug.log
+error.log
+
+# Testing
+coverage/
+.nyc_output/
+*.test.js
+*.spec.js
+
+# Supabase Local
+.supabase/
+supabase/.env
+supabase/.temp
+
+# GitHub Pages
+CNAME
+.gh-pages/
+
+# Archive Files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Secret/Sensitive Files
+*.key
+*.pem
+*.crt
+*.csr
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Auto-generated files
+*.generated.js
+*.generated.css
+*.auto.js
+
+# Local Config
+config.local.js
+settings.local.js
+config.json
+.config/
+
+# Misc
+.DS_Store
+*.sass-cache
+*.scssc
+*.css.map
+*.js.map
+.eslintcache
+*.tsbuildinfo
