@@ -1,40 +1,25 @@
 // ============================================================
-// DATABASE MODULE - Production Ready with Supabase Sync (FULLY FIXED)
+// DATABASE MODULE - Production Ready with Supabase Sync (FIXED URL)
 // ============================================================
 
 const DB_NAME = 'SkyMedDB';
 const DB_VERSION = 17;
 const STORES = [
-    'vendors',
-    'contracts',
-    'general_entries',
-    'receivables',
-    'payables',
-    'master_ledger',
-    'contract_history',
-    'deleted_records',
-    'app_settings',
-    'provisions',
-    'payroll_entries',
-    'employees',
-    'gst_details',
-    'leave_balances',
-    'leave_history',
-    'employee_contract_history',
-    'advances',
-    'ledger',
-    'assets',
-    'imprests'
+    'vendors', 'contracts', 'general_entries', 'receivables', 'payables',
+    'master_ledger', 'contract_history', 'deleted_records', 'app_settings',
+    'provisions', 'payroll_entries', 'employees', 'gst_details',
+    'leave_balances', 'leave_history', 'employee_contract_history',
+    'advances', 'ledger', 'assets', 'imprests'
 ];
 
 // ============================================================
-// 🔥 SUPABASE CONFIG
+// 🔥 SUPABASE CONFIG - YAHAN SIRF BASE URL HAI (NO /rest/v1/)
 // ============================================================
 const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
 
 // ============================================================
-// 🔥 TABLE-SPECIFIC ALLOWED FIELDS (for Supabase)
+// 🔥 TABLE-SPECIFIC ALLOWED FIELDS
 // ============================================================
 const TABLE_FIELDS = {
     'vendors': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'createdAt', 'updatedAt', 'paymentPeriod', 'contact', 'email', 'address', 'serviceCategory', 'entryType', 'fy', 'location'],
@@ -174,26 +159,13 @@ class SkyMedDB {
         const all = this.dataCache[store] || [];
         if (!prefix) {
             const prefixes = {
-                'vendors': 'VND',
-                'contracts': 'CTR',
-                'general_entries': 'GEN',
-                'receivables': 'REC',
-                'payables': 'PAY',
-                'master_ledger': 'MST',
-                'contract_history': 'CHS',
-                'deleted_records': 'DEL',
-                'app_settings': 'SET',
-                'provisions': 'PRV',
-                'payroll_entries': 'PRL',
-                'employees': 'EMP',
-                'gst_details': 'GST',
-                'leave_balances': 'LVB',
-                'leave_history': 'LVH',
-                'employee_contract_history': 'ECH',
-                'advances': 'ADV',
-                'ledger': 'LED',
-                'assets': 'AST',
-                'imprests': 'IMP'
+                'vendors': 'VND', 'contracts': 'CTR', 'general_entries': 'GEN',
+                'receivables': 'REC', 'payables': 'PAY', 'master_ledger': 'MST',
+                'contract_history': 'CHS', 'deleted_records': 'DEL', 'app_settings': 'SET',
+                'provisions': 'PRV', 'payroll_entries': 'PRL', 'employees': 'EMP',
+                'gst_details': 'GST', 'leave_balances': 'LVB', 'leave_history': 'LVH',
+                'employee_contract_history': 'ECH', 'advances': 'ADV', 'ledger': 'LED',
+                'assets': 'AST', 'imprests': 'IMP'
             };
             prefix = prefixes[store] || store.substring(0, 3).toUpperCase();
         }
@@ -276,7 +248,7 @@ class SkyMedDB {
     }
 
     // ============================================================
-    // 🔥 SUPABASE OPERATIONS - FULLY FIXED
+    // 🔥 SUPABASE OPERATIONS - FIXED URL (NO DOUBLE /rest/v1/)
     // ============================================================
     
     async syncToSupabase() {
@@ -317,7 +289,6 @@ class SkyMedDB {
                 const clean = {};
                 for (const key of allowed) {
                     if (item[key] !== undefined && item[key] !== null) {
-                        // Agar object/array hai toh stringify karo
                         if (typeof item[key] === 'object' && item[key] !== null) {
                             try {
                                 clean[key] = JSON.stringify(item[key]);
@@ -329,14 +300,12 @@ class SkyMedDB {
                         }
                     }
                 }
-                // 🔥 Ensure id exists
                 if (!clean.id && item.id) {
                     clean.id = item.id;
                 }
                 return clean;
             });
 
-            // 🔥 Filter out completely empty objects
             const finalData = cleanData.filter(item => item.id && Object.keys(item).length > 1);
             
             if (finalData.length === 0) {
@@ -344,6 +313,7 @@ class SkyMedDB {
                 return true;
             }
 
+            // ✅ FIXED: SIRF EK BAAR /rest/v1/ USE KARO
             const url = `${SUPABASE_URL}/rest/v1/${store}`;
             console.log(`📤 Posting ${finalData.length} records to ${store}`);
 
@@ -374,6 +344,7 @@ class SkyMedDB {
 
     async loadFromSupabase(store) {
         try {
+            // ✅ FIXED: SIRF EK BAAR /rest/v1/
             const url = `${SUPABASE_URL}/rest/v1/${store}?select=*`;
             
             const response = await fetch(url, {
