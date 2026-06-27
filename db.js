@@ -19,7 +19,7 @@ const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_K9KQsPH1KXCDeRdkpKDslg_JFib0TbQ';
 
-// Use ANON key for API calls (it's the one that works)
+// Use ANON key for API calls
 const SUPABASE_KEY = SUPABASE_ANON_KEY;
 
 // ============================================================
@@ -47,6 +47,43 @@ const TABLE_FIELDS = {
     'assets': ['id', 'assetName', 'assetCode', 'category', 'base', 'purchaseDate', 'cost', 'status', 'location', 'notes', 'createdAt', 'updatedAt'],
     'imprests': ['id', 'employeeId', 'employeeName', 'base', 'amount', 'imprestDate', 'dueDate', 'status', 'utr', 'notes', 'createdAt', 'updatedAt']
 };
+
+// ============================================================
+// NORMALIZE UTILITY - Fix PGRST102 "All object keys must match"
+// ============================================================
+function normalizePayload(data, allowedFields) {
+    if (!data || data.length === 0) return [];
+    
+    // Get all keys from all objects
+    const allKeys = [...new Set(data.flatMap(obj => Object.keys(obj)))];
+    // Filter to only allowed fields
+    const finalKeys = allKeys.filter(key => allowedFields.includes(key));
+    
+    // Normalize each object to have all keys
+    return data.map(obj => {
+        const normalized = {};
+        for (const key of finalKeys) {
+            if (obj[key] !== undefined && obj[key] !== null) {
+                if (typeof obj[key] === 'object') {
+                    try {
+                        normalized[key] = JSON.stringify(obj[key]);
+                    } catch(e) {
+                        normalized[key] = String(obj[key]);
+                    }
+                } else {
+                    normalized[key] = obj[key];
+                }
+            } else {
+                normalized[key] = null; // ✅ FIX: All objects must have same keys
+            }
+        }
+        // Ensure id exists
+        if (!normalized.id && obj.id) {
+            normalized.id = obj.id;
+        }
+        return normalized;
+    });
+}
 
 // ============================================================
 // XLSX LIBRARY LOADER
@@ -252,7 +289,7 @@ class SkyMedDB {
     }
 
     // ============================================================
-    // SUPABASE OPERATIONS
+    // SUPABASE OPERATIONS - WITH NORMALIZED PAYLOAD
     // ============================================================
     
     async syncToSupabase() {
@@ -287,36 +324,29 @@ class SkyMedDB {
 
             const allowedFields = TABLE_FIELDS[store] || ['id'];
             
-            const cleanData = data.map(item => {
-                const clean = {};
-                for (const key of allowedFields) {
-                    if (item[key] !== undefined && item[key] !== null) {
-                        if (typeof item[key] === 'object') {
-                            try {
-                                clean[key] = JSON.stringify(item[key]);
-                            } catch(e) {
-                                clean[key] = String(item[key]);
-                            }
-                        } else {
-                            clean[key] = item[key];
-                        }
-                    }
-                }
-                if (!clean.id && item.id) {
-                    clean.id = item.id;
-                }
-                return clean;
-            });
-
-            const finalData = cleanData.filter(item => item.id && Object.keys(item).length >= 1);
+            // ✅ FIX: Normalize payload - all objects must have same keys
+            const normalizedData = normalizePayload(data, allowedFields);
+            
+            // Filter out empty objects
+            const finalData = normalizedData.filter(item => item.id || Object.keys(item).length > 1);
             
             if (finalData.length === 0) {
                 console.log('No valid data for', store);
                 return true;
             }
 
+            // ✅ Check: All objects have same keys
+            const firstKeys = Object.keys(finalData[0]).sort().join(',');
+            const allSame = finalData.every(item => Object.keys(item).sort().join(',') === firstKeys);
+            if (!allSame) {
+                console.warn('Objects have different keys for', store);
+                console.warn('First object keys:', Object.keys(finalData[0]));
+                console.warn('Last object keys:', Object.keys(finalData[finalData.length - 1]));
+            }
+
             const url = `${SUPABASE_URL}/rest/v1/${store}`;
             console.log('Posting', finalData.length, 'records to', store);
+            console.log('Sample (first):', JSON.stringify(finalData[0]).substring(0, 200));
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -333,7 +363,8 @@ class SkyMedDB {
                 const errorText = await response.text();
                 console.error('Error', response.status, 'for', store, ':', errorText);
                 if (response.status === 400) {
-                    console.error('Data keys sent:', Object.keys(finalData[0]));
+                    console.error('Keys in first object:', Object.keys(finalData[0]));
+                    console.error('Keys in last object:', Object.keys(finalData[finalData.length - 1]));
                 }
                 return false;
             }
