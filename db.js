@@ -32,7 +32,7 @@ const STORES = [
 // 🔥 SUPABASE CONFIG - Yahan apni values daalo
 // ============================================================
 const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_K9KQsPH1KXCDeRdkpKDslg_JFib0TbQ';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
 
 // ============================================================
 // XLSX LIBRARY LOADER
