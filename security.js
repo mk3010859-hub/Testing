@@ -1,18 +1,34 @@
 // ============================================================
-// 🔒 SECURITY MODULE - Prevent Right Click, Inspect, F12
+// 🔒 SECURITY MODULE - With Debug Mode
 // ============================================================
 
 (function() {
     'use strict';
 
-    // 🔥 1. Disable Right Click
+    // ============================================================
+    // 🔥 DEBUG MODE - URL me ?debug add karne par security off
+    // ============================================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const isDebugMode = urlParams.has('debug');
+    
+    if (isDebugMode) {
+        console.log('🔓 Debug Mode Enabled - Security Disabled');
+        console.log('📊 You can now use F12 / Console freely');
+        return; // ⛔ Security completely disabled
+    }
+
+    // ============================================================
+    // 🔒 SECURITY ENABLED (Normal Mode)
+    // ============================================================
+
+    // 1. Disable Right Click
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
         showSecurityAlert('⚠️ Right click is disabled for security reasons.');
         return false;
     });
 
-    // 🔥 2. Disable Keyboard Shortcuts
+    // 2. Disable Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
         // F12
         if (e.key === 'F12' || e.keyCode === 123) {
@@ -55,35 +71,15 @@
             showSecurityAlert('⚠️ Print is disabled.');
             return false;
         }
-        
-        // Ctrl+C (Copy) - optional, uncomment if needed
-        // if (e.ctrlKey && (e.key === 'C' || e.keyCode === 67)) {
-        //     e.preventDefault();
-        //     showSecurityAlert('⚠️ Copy is disabled.');
-        //     return false;
-        // }
     });
 
-    // 🔥 3. Disable Drag and Drop
+    // 3. Disable Drag and Drop
     document.addEventListener('dragstart', function(e) {
         e.preventDefault();
         return false;
     });
 
-    // 🔥 4. Disable Select Text (optional - can be removed)
-    // document.addEventListener('selectstart', function(e) {
-    //     e.preventDefault();
-    //     return false;
-    // });
-
-    // 🔥 5. Disable Copy (optional)
-    // document.addEventListener('copy', function(e) {
-    //     e.preventDefault();
-    //     return false;
-    // });
-
-    // 🔥 6. Block Dev Tools via console.log override
-    const originalConsole = window.console;
+    // 4. Block Dev Tools via console.log override
     window.console = {
         log: function() {},
         warn: function() {},
@@ -104,14 +100,13 @@
         profileEnd: function() {}
     };
 
-    // 🔥 7. Prevent opening in iframe (Clickjacking protection)
+    // 5. Prevent opening in iframe (Clickjacking protection)
     if (window.top !== window.self) {
         window.top.location = window.self.location;
     }
 
-    // 🔥 8. Security Alert Function
+    // 6. Security Alert Function
     function showSecurityAlert(message) {
-        // Show a small non-intrusive toast
         const toast = document.createElement('div');
         toast.style.cssText = `
             position: fixed;
@@ -141,7 +136,7 @@
         }, 3000);
     }
 
-    // 🔥 9. Add CSS for animation
+    // 7. Add CSS for animation
     const style = document.createElement('style');
     style.textContent = `
         @keyframes slideIn {
@@ -151,5 +146,6 @@
     `;
     document.head.appendChild(style);
 
-    console.log('🔒 Security module loaded!');
+    console.log('🔒 Security module loaded! (Production Mode)');
+    console.log('🔓 To disable: Add ?debug to URL');
 })();
