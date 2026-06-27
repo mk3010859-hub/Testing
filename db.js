@@ -3,7 +3,7 @@
 // ============================================================
 
 const DB_NAME = 'SkyMedDB';
-const DB_VERSION = 16;
+const DB_VERSION = 17;
 const STORES = [
     'vendors',
     'contracts',
@@ -32,6 +32,32 @@ const STORES = [
 // ============================================================
 const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
+
+// ============================================================
+// 🔥 TABLE-SPECIFIC ALLOWED FIELDS (for Supabase)
+// ============================================================
+const TABLE_FIELDS = {
+    'vendors': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'createdAt', 'updatedAt', 'paymentPeriod', 'contact', 'email', 'address', 'serviceCategory', 'entryType', 'fy', 'location'],
+    'contracts': ['id', 'vendorCode', 'vendorName', 'contractId', 'contractDate', 'startDate', 'endDate', 'amount', 'status', 'base', 'serviceCategory', 'createdAt', 'updatedAt', 'description'],
+    'contract_history': ['id', 'contractId', 'vendorCode', 'vendorName', 'type', 'details', 'date', 'oldValues', 'newValues', 'createdAt', 'updatedAt'],
+    'app_settings': ['id', 'autoSync', 'syncInterval', 'darkMode', 'currencySymbol', 'dateFormat', 'notifications', 'maxBackups', 'updatedAt', 'createdAt'],
+    'employees': ['id', 'employeeId', 'employeeName', 'base', 'designation', 'department', 'joiningDate', 'status', 'email', 'phone', 'address', 'createdAt', 'updatedAt'],
+    'gst_details': ['id', 'vendorCode', 'vendorName', 'gstin', 'gstRate', 'base', 'createdAt', 'updatedAt'],
+    'receivables': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'receivedOn', 'utr', 'serviceCategory', 'entryId', 'movedAt', 'createdAt', 'updatedAt'],
+    'payables': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'paidOn', 'utr', 'serviceCategory', 'entryId', 'movedAt', 'createdAt', 'updatedAt'],
+    'general_entries': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'invoiceReceivedDate', 'serviceType', 'entryType', 'fy', 'location', 'createdAt', 'updatedAt'],
+    'master_ledger': ['id', 'vendorCode', 'vendorName', 'month', 'serviceCategory', 'base', 'invoice', 'count', 'rate', 'amount', 'gst', 'status', 'type', 'utr', 'date', 'createdAt', 'updatedAt'],
+    'deleted_records': ['id', 'originalStore', 'originalId', 'vendorName', 'invoice', 'amount', 'deletedAt', 'createdAt', 'updatedAt'],
+    'provisions': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'amount', 'gst', 'status', 'date', 'dueDate', 'serviceCategory', 'fy', 'location', 'createdAt', 'updatedAt'],
+    'payroll_entries': ['id', 'employeeId', 'employeeName', 'base', 'month', 'year', 'basicSalary', 'allowances', 'deductions', 'totalSalary', 'status', 'createdAt', 'updatedAt'],
+    'leave_balances': ['id', 'employeeId', 'employeeName', 'leaveType', 'totalLeaves', 'usedLeaves', 'balanceLeaves', 'fy', 'createdAt', 'updatedAt'],
+    'leave_history': ['id', 'employeeId', 'employeeName', 'leaveType', 'fromDate', 'toDate', 'days', 'status', 'reason', 'createdAt', 'updatedAt'],
+    'employee_contract_history': ['id', 'employeeId', 'employeeName', 'contractType', 'startDate', 'endDate', 'status', 'createdAt', 'updatedAt'],
+    'advances': ['id', 'employeeId', 'employeeName', 'base', 'amount', 'advanceDate', 'dueDate', 'status', 'utr', 'notes', 'createdAt', 'updatedAt'],
+    'ledger': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'amount', 'gst', 'status', 'type', 'date', 'utr', 'fy', 'location', 'createdAt', 'updatedAt'],
+    'assets': ['id', 'assetName', 'assetCode', 'category', 'base', 'purchaseDate', 'cost', 'status', 'location', 'notes', 'createdAt', 'updatedAt'],
+    'imprests': ['id', 'employeeId', 'employeeName', 'base', 'amount', 'imprestDate', 'dueDate', 'status', 'utr', 'notes', 'createdAt', 'updatedAt']
+};
 
 // ============================================================
 // XLSX LIBRARY LOADER
@@ -226,7 +252,6 @@ class SkyMedDB {
                 if (folderLabel) folderLabel.textContent = savedFolder;
             }
             
-            // 🔥 ONLY LOAD FROM SUPABASE IF TABLES EXIST
             await this.syncFromSupabase();
             await this.checkAndRecover();
             
@@ -284,35 +309,43 @@ class SkyMedDB {
                 return true;
             }
 
-            // 🔥 CLEAN DATA - Remove undefined/null and circular references
+            // 🔥 Get allowed fields for this table
+            const allowed = TABLE_FIELDS[store] || ['id', 'createdAt', 'updatedAt'];
+            
+            // 🔥 CLEAN DATA — Sirf allowed fields
             const cleanData = data.map(item => {
                 const clean = {};
-                for (const [key, value] of Object.entries(item)) {
-                    if (value !== undefined && value !== null && typeof value !== 'function') {
-                        // Handle objects/arrays - stringify them
-                        if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+                for (const key of allowed) {
+                    if (item[key] !== undefined && item[key] !== null) {
+                        // Agar object/array hai toh stringify karo
+                        if (typeof item[key] === 'object' && item[key] !== null) {
                             try {
-                                clean[key] = JSON.stringify(value);
+                                clean[key] = JSON.stringify(item[key]);
                             } catch(e) {
-                                clean[key] = String(value);
-                            }
-                        } else if (Array.isArray(value)) {
-                            try {
-                                clean[key] = JSON.stringify(value);
-                            } catch(e) {
-                                clean[key] = String(value);
+                                clean[key] = String(item[key]);
                             }
                         } else {
-                            clean[key] = value;
+                            clean[key] = item[key];
                         }
                     }
+                }
+                // 🔥 Ensure id exists
+                if (!clean.id && item.id) {
+                    clean.id = item.id;
                 }
                 return clean;
             });
 
+            // 🔥 Filter out completely empty objects
+            const finalData = cleanData.filter(item => item.id && Object.keys(item).length > 1);
+            
+            if (finalData.length === 0) {
+                console.log(`⏭️ No valid data for ${store}`);
+                return true;
+            }
+
             const url = `${SUPABASE_URL}/rest/v1/${store}`;
-            console.log(`📤 Posting ${cleanData.length} records to: ${store}`);
-            console.log('📦 Sample:', JSON.stringify(cleanData[0]).substring(0, 200));
+            console.log(`📤 Posting ${finalData.length} records to ${store}`);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -322,22 +355,16 @@ class SkyMedDB {
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Prefer': 'resolution=merge-duplicates'
                 },
-                body: JSON.stringify(cleanData)
+                body: JSON.stringify(finalData)
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                if (response.status === 400) {
-                    console.warn(`⚠️ Table "${store}" structure mismatch or table doesn't exist.`);
-                    console.warn('📋 Data keys:', Object.keys(cleanData[0]));
-                    console.warn('💡 Please create the table in Supabase first!');
-                } else {
-                    console.error(`❌ HTTP ${response.status}: ${errorText}`);
-                }
+                console.error(`❌ ${store} Error ${response.status}:`, errorText);
                 return false;
             }
             
-            console.log(`✅ Saved ${cleanData.length} records to ${store}`);
+            console.log(`✅ Saved ${finalData.length} records to ${store}`);
             return true;
         } catch(e) {
             console.warn(`⚠️ Failed to save ${store}:`, e.message);
@@ -348,7 +375,6 @@ class SkyMedDB {
     async loadFromSupabase(store) {
         try {
             const url = `${SUPABASE_URL}/rest/v1/${store}?select=*`;
-            console.log(`📡 Fetching: ${url}`);
             
             const response = await fetch(url, {
                 headers: {
@@ -569,7 +595,6 @@ class SkyMedDB {
 
     async getAll(store) {
         if (this.dataCache[store] && this.dataCache[store].length > 0) {
-            console.log(`📊 ${store}: ${this.dataCache[store].length} records (from cache)`);
             return this.dataCache[store];
         }
         
@@ -583,7 +608,6 @@ class SkyMedDB {
                             if (data[store] && data[store].length) {
                                 this.dataCache[store] = data[store];
                                 this.saveCacheToStorage();
-                                console.log(`📊 ${store}: ${data[store].length} records (from localStorage fallback)`);
                                 resolve(data[store]);
                                 return;
                             }
@@ -598,7 +622,6 @@ class SkyMedDB {
                     const result = req.result || [];
                     this.dataCache[store] = result;
                     this.saveCacheToStorage();
-                    console.log(`📊 ${store}: ${result.length} records`);
                     resolve(result);
                 };
                 req.onerror = () => {
