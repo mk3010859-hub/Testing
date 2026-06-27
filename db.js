@@ -3,14 +3,29 @@
 // ============================================================
 
 const DB_NAME = 'SkyMedDB';
-const DB_VERSION = 15;
+const DB_VERSION = 16;  // 🔥 Version increase for fresh start
 const STORES = [
-    'vendors', 'contracts', 'general', 'receivables', 
-    'payables', 'master', 'contractHistory', 'deletedRecords', 
-    'settings', 'provisions', 'payroll', 'employees', 
-    'gstDetails', 'leaveBalances', 'leaveHistory', 
-    'employeeContractHistory', 'advances', 'ledger',
-    'assets', 'imprests' 
+    // ✅ Exact match with Supabase table names
+    'vendors',                 // ✅ master.html
+    'contracts',               // ✅ contracts.html
+    'general_entries',         // ✅ general.html (FIXED: was 'general')
+    'receivables',             // ✅ receivables.html
+    'payables',                // ✅ payables.html
+    'master_ledger',           // ✅ ledger.html (FIXED: was 'master')
+    'contract_history',        // ✅ contracts.html (FIXED: was 'contractHistory')
+    'deleted_records',         // ✅ deleted.html (FIXED: was 'deletedRecords')
+    'app_settings',            // ✅ settings.html (FIXED: was 'settings')
+    'provisions',              // ✅ provision.html
+    'payroll_entries',         // ✅ payroll.html (FIXED: was 'payroll')
+    'employees',               // ✅ payroll.html
+    'gst_details',             // ✅ payroll.html, settings.html (FIXED: was 'gstDetails')
+    'leave_balances',          // ✅ payroll.html (FIXED: was 'leaveBalances')
+    'leave_history',           // ✅ payroll.html (FIXED: was 'leaveHistory')
+    'employee_contract_history', // ✅ payroll.html (FIXED: was 'employeeContractHistory')
+    'advances',                // ✅ advance.html
+    'ledger',                  // ✅ ledger.html
+    'assets',                  // ✅ assets.html
+    'imprests'                 // ✅ imprest.html
 ];
 
 // ============================================================
@@ -60,7 +75,7 @@ class SkyMedDB {
         this.maxBackups = 1;
         this.isInitialized = false;
         this.dataCache = {};
-        this.lastIdMap = {}; // 🔥 NEW: Track last ID per store
+        this.lastIdMap = {};
         this.loadCacheFromStorage();
         this.init();
     }
@@ -72,7 +87,6 @@ class SkyMedDB {
                 this.dataCache = JSON.parse(cached);
                 console.log('📦 Cache loaded from localStorage');
             }
-            // Load last ID map
             const idMap = localStorage.getItem('skymed_last_ids');
             if (idMap) {
                 this.lastIdMap = JSON.parse(idMap);
@@ -96,12 +110,9 @@ class SkyMedDB {
         this.saveCacheToStorage();
     }
 
-    // 🔥 FIXED: Generate unique ID for employees
     generateEmployeeId() {
         const store = 'employees';
         const all = this.dataCache[store] || [];
-        
-        // Find max numeric ID
         let maxNum = 0;
         for (const item of all) {
             if (item.id && item.id.startsWith('PA')) {
@@ -111,9 +122,7 @@ class SkyMedDB {
                 }
             }
         }
-        
-        // Also check other stores that might have employee IDs
-        for (const storeName of ['vendors', 'general', 'receivables', 'payables']) {
+        for (const storeName of ['vendors', 'general_entries', 'receivables', 'payables']) {
             const items = this.dataCache[storeName] || [];
             for (const item of items) {
                 if (item.empId && item.empId.startsWith('PA')) {
@@ -130,29 +139,32 @@ class SkyMedDB {
                 }
             }
         }
-        
         const nextNum = maxNum + 1;
         const id = 'PA' + String(nextNum).padStart(4, '0');
         console.log(`🔑 Generated Employee ID: ${id} (from ${maxNum})`);
         return id;
     }
 
-    // 🔥 FIXED: Generate unique ID for any store
     generateStoreId(store, prefix = null) {
         const all = this.dataCache[store] || [];
-        
-        // If prefix not provided, use store name
         if (!prefix) {
             const prefixes = {
                 'vendors': 'VND',
                 'contracts': 'CTR',
-                'general': 'GEN',
+                'general_entries': 'GEN',
                 'receivables': 'REC',
                 'payables': 'PAY',
+                'master_ledger': 'MST',
+                'contract_history': 'CHS',
+                'deleted_records': 'DEL',
+                'app_settings': 'SET',
                 'provisions': 'PRV',
-                'payroll': 'PRL',
+                'payroll_entries': 'PRL',
                 'employees': 'EMP',
-                'gstDetails': 'GST',
+                'gst_details': 'GST',
+                'leave_balances': 'LVB',
+                'leave_history': 'LVH',
+                'employee_contract_history': 'ECH',
                 'advances': 'ADV',
                 'ledger': 'LED',
                 'assets': 'AST',
@@ -160,7 +172,6 @@ class SkyMedDB {
             };
             prefix = prefixes[store] || store.substring(0, 3).toUpperCase();
         }
-        
         let maxNum = 0;
         for (const item of all) {
             if (item.id && item.id.startsWith(prefix)) {
@@ -170,7 +181,6 @@ class SkyMedDB {
                 }
             }
         }
-        
         const nextNum = maxNum + 1;
         const id = prefix + String(nextNum).padStart(4, '0');
         console.log(`🔑 Generated ID for ${store}: ${id}`);
@@ -253,7 +263,11 @@ class SkyMedDB {
             }
             
             for (const store of STORES) {
-                await this.saveStoreToSupabase(store, allData[store]);
+                if (allData[store] && allData[store].length > 0) {
+                    await this.saveStoreToSupabase(store, allData[store]);
+                } else {
+                    console.log(`⏭️ Skipping ${store} - no data`);
+                }
             }
             
             console.log('✅ Supabase sync completed');
@@ -266,6 +280,10 @@ class SkyMedDB {
 
     async saveStoreToSupabase(store, data) {
         try {
+            if (!data || data.length === 0) {
+                return true;
+            }
+            
             const response = await fetch(`${SUPABASE_URL}/rest/v1/${store}?on_conflict=id`, {
                 method: 'POST',
                 headers: {
@@ -279,10 +297,11 @@ class SkyMedDB {
             
             if (!response.ok) {
                 if (response.status === 404) {
-                    await this.createSupabaseTable(store);
+                    console.warn(`⚠️ Table "${store}" not found in Supabase. Please create it.`);
                 }
                 throw new Error(`HTTP ${response.status}`);
             }
+            console.log(`✅ Saved ${data.length} records to ${store}`);
             return true;
         } catch(e) {
             console.warn(`⚠️ Failed to save ${store} to Supabase:`, e);
@@ -301,7 +320,7 @@ class SkyMedDB {
             
             if (!response.ok) {
                 if (response.status === 404) {
-                    await this.createSupabaseTable(store);
+                    console.warn(`⚠️ Table "${store}" not found in Supabase`);
                     return [];
                 }
                 throw new Error(`HTTP ${response.status}`);
@@ -438,12 +457,11 @@ class SkyMedDB {
     }
 
     // ============================================================
-    // CRUD OPERATIONS - FIXED
+    // CRUD OPERATIONS
     // ============================================================
     
     async add(store, data) {
         try {
-            // 🔥 FIXED: Generate ID if not provided
             if (!data.id) {
                 if (store === 'employees' || data.employeeId || data.empId) {
                     data.id = this.generateEmployeeId();
@@ -454,10 +472,8 @@ class SkyMedDB {
                 }
             }
             
-            // 🔥 Check if ID already exists
             const existing = await this.get(store, data.id);
             if (existing) {
-                // If ID exists, generate a new one
                 if (store === 'employees' || data.employeeId || data.empId) {
                     data.id = this.generateEmployeeId();
                     if (data.employeeId) data.employeeId = data.id;
@@ -667,7 +683,7 @@ class SkyMedDB {
             else if (item.rate) deletedItem.amount = item.rate;
             else if (item.totalSalary) deletedItem.amount = item.totalSalary;
             
-            await this.put('deletedRecords', deletedItem);
+            await this.put('deleted_records', deletedItem);
             await this.delete(store, id);
             this.scheduleSync();
             this.syncToSupabase();
@@ -683,7 +699,7 @@ class SkyMedDB {
 
     async recoverDeleted(id) {
         try {
-            const deleted = await this.get('deletedRecords', id);
+            const deleted = await this.get('deleted_records', id);
             if (!deleted) return null;
             
             const { originalStore, originalId, deletedAt, ...rest } = deleted;
@@ -694,7 +710,7 @@ class SkyMedDB {
             };
             
             await this.put(originalStore, recoverItem);
-            await this.delete('deletedRecords', id);
+            await this.delete('deleted_records', id);
             this.scheduleSync();
             this.syncToSupabase();
             
@@ -708,12 +724,12 @@ class SkyMedDB {
     }
 
     async getAllDeleted() {
-        return await this.getAll('deletedRecords');
+        return await this.getAll('deleted_records');
     }
 
     async permanentlyDelete(id) {
         try {
-            await this.delete('deletedRecords', id);
+            await this.delete('deleted_records', id);
             this.scheduleSync();
             this.syncToSupabase();
             console.log(`🗑️ Permanently deleted:`, id);
@@ -1010,14 +1026,12 @@ class SkyMedDB {
             if (!hasData) {
                 console.log('🔄 No data in IndexedDB, attempting recovery...');
                 
-                // Try Supabase first
                 const supabaseData = await this.syncFromSupabase();
                 if (supabaseData) {
                     console.log('✅ Data recovered from Supabase!');
                     return;
                 }
                 
-                // Fallback to LocalStorage
                 await this.loadFromLocalStorage();
                 await this.forceReload();
                 
@@ -1113,7 +1127,7 @@ class SkyMedDB {
     // ============================================================
     async loadSettings() {
         try {
-            const settings = await this.getAll('settings');
+            const settings = await this.getAll('app_settings');
             if (settings.length) {
                 this.settings = settings[0];
             } else {
@@ -1128,7 +1142,7 @@ class SkyMedDB {
                     maxBackups: 1,
                     updatedAt: new Date().toISOString()
                 };
-                await this.put('settings', this.settings);
+                await this.put('app_settings', this.settings);
             }
         } catch(e) {
             console.warn('Settings load failed:', e);
@@ -1140,7 +1154,7 @@ class SkyMedDB {
     async updateSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings, updatedAt: new Date().toISOString() };
         this.maxBackups = this.settings.maxBackups || 1;
-        await this.put('settings', this.settings);
+        await this.put('app_settings', this.settings);
         this.scheduleSync();
         this.syncToSupabase();
         return this.settings;
@@ -1181,14 +1195,14 @@ class SkyMedDB {
             newValues: newValues || {},
             createdAt: new Date().toISOString()
         };
-        await this.put('contractHistory', entry);
+        await this.put('contract_history', entry);
         this.scheduleSync();
         this.syncToSupabase();
         return entry;
     }
 
     async getContractHistory(contractId) {
-        const all = await this.getAll('contractHistory');
+        const all = await this.getAll('contract_history');
         return all.filter(h => h.contractId === contractId).sort((a, b) => 
             new Date(b.date) - new Date(a.date)
         );
@@ -1227,7 +1241,7 @@ class SkyMedDB {
         }
         await this.put('receivables', recData);
         await this.addToMaster(recData, 'Receivable');
-        await this.delete('general', entry.id);
+        await this.delete('general_entries', entry.id);
         this.scheduleSync();
         this.syncToSupabase();
         return recData;
@@ -1263,7 +1277,7 @@ class SkyMedDB {
         }
         await this.put('payables', payData);
         await this.addToMaster(payData, 'Payable');
-        await this.delete('general', entry.id);
+        await this.delete('general_entries', entry.id);
         this.scheduleSync();
         this.syncToSupabase();
         return payData;
@@ -1288,7 +1302,7 @@ class SkyMedDB {
             utr: item.utr || '',
             date: item.date || new Date().toISOString().split('T')[0]
         };
-        await this.put('master', masterData);
+        await this.put('master_ledger', masterData);
         return masterData;
     }
 
