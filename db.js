@@ -23,29 +23,29 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_K9KQsPH1KXCDeRdkpKDslg_JFib0TbQ
 const SUPABASE_KEY = SUPABASE_ANON_KEY;
 
 // ============================================================
-// TABLE-SPECIFIC ALLOWED FIELDS
+// TABLE-SPECIFIC ALLOWED FIELDS (with sync_status)
 // ============================================================
 const TABLE_FIELDS = {
-    'vendors': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'createdAt', 'updatedAt', 'paymentPeriod', 'contact', 'email', 'address', 'serviceCategory', 'entryType', 'fy', 'location'],
-    'contracts': ['id', 'vendorCode', 'vendorName', 'contractId', 'contractDate', 'startDate', 'endDate', 'amount', 'status', 'base', 'serviceCategory', 'createdAt', 'updatedAt', 'description'],
-    'contract_history': ['id', 'contractId', 'vendorCode', 'vendorName', 'type', 'details', 'date', 'oldValues', 'newValues', 'createdAt', 'updatedAt'],
-    'app_settings': ['id', 'autoSync', 'syncInterval', 'darkMode', 'currencySymbol', 'dateFormat', 'notifications', 'maxBackups', 'updatedAt', 'createdAt'],
-    'employees': ['id', 'employeeId', 'employeeName', 'base', 'designation', 'department', 'joiningDate', 'status', 'email', 'phone', 'address', 'createdAt', 'updatedAt'],
-    'gst_details': ['id', 'vendorCode', 'vendorName', 'gstin', 'gstRate', 'base', 'createdAt', 'updatedAt'],
-    'receivables': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'receivedOn', 'utr', 'serviceCategory', 'entryId', 'movedAt', 'createdAt', 'updatedAt'],
-    'payables': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'paidOn', 'utr', 'serviceCategory', 'entryId', 'movedAt', 'createdAt', 'updatedAt'],
-    'general_entries': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'invoiceReceivedDate', 'serviceType', 'entryType', 'fy', 'location', 'createdAt', 'updatedAt'],
-    'master_ledger': ['id', 'vendorCode', 'vendorName', 'month', 'serviceCategory', 'base', 'invoice', 'count', 'rate', 'amount', 'gst', 'status', 'type', 'utr', 'date', 'createdAt', 'updatedAt'],
-    'deleted_records': ['id', 'originalStore', 'originalId', 'vendorName', 'invoice', 'amount', 'deletedAt', 'createdAt', 'updatedAt'],
-    'provisions': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'amount', 'gst', 'status', 'date', 'dueDate', 'serviceCategory', 'fy', 'location', 'createdAt', 'updatedAt'],
-    'payroll_entries': ['id', 'employeeId', 'employeeName', 'base', 'month', 'year', 'basicSalary', 'allowances', 'deductions', 'totalSalary', 'status', 'createdAt', 'updatedAt'],
-    'leave_balances': ['id', 'employeeId', 'employeeName', 'leaveType', 'totalLeaves', 'usedLeaves', 'balanceLeaves', 'fy', 'createdAt', 'updatedAt'],
-    'leave_history': ['id', 'employeeId', 'employeeName', 'leaveType', 'fromDate', 'toDate', 'days', 'status', 'reason', 'createdAt', 'updatedAt'],
-    'employee_contract_history': ['id', 'employeeId', 'employeeName', 'contractType', 'startDate', 'endDate', 'status', 'createdAt', 'updatedAt'],
-    'advances': ['id', 'employeeId', 'employeeName', 'base', 'amount', 'advanceDate', 'dueDate', 'status', 'utr', 'notes', 'createdAt', 'updatedAt'],
-    'ledger': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'amount', 'gst', 'status', 'type', 'date', 'utr', 'fy', 'location', 'createdAt', 'updatedAt'],
-    'assets': ['id', 'assetName', 'assetCode', 'category', 'base', 'purchaseDate', 'cost', 'status', 'location', 'notes', 'createdAt', 'updatedAt'],
-    'imprests': ['id', 'employeeId', 'employeeName', 'base', 'amount', 'imprestDate', 'dueDate', 'status', 'utr', 'notes', 'createdAt', 'updatedAt']
+    'vendors': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'createdAt', 'updatedAt', 'paymentPeriod', 'contact', 'email', 'address', 'serviceCategory', 'entryType', 'fy', 'location', 'sync_status'],
+    'contracts': ['id', 'vendorCode', 'vendorName', 'contractId', 'contractDate', 'startDate', 'endDate', 'amount', 'status', 'base', 'serviceCategory', 'createdAt', 'updatedAt', 'description', 'sync_status'],
+    'contract_history': ['id', 'contractId', 'vendorCode', 'vendorName', 'type', 'details', 'date', 'oldValues', 'newValues', 'createdAt', 'updatedAt', 'sync_status'],
+    'app_settings': ['id', 'autoSync', 'syncInterval', 'darkMode', 'currencySymbol', 'dateFormat', 'notifications', 'maxBackups', 'updatedAt', 'createdAt', 'sync_status'],
+    'employees': ['id', 'employeeId', 'employeeName', 'base', 'designation', 'department', 'joiningDate', 'status', 'email', 'phone', 'address', 'createdAt', 'updatedAt', 'sync_status'],
+    'gst_details': ['id', 'vendorCode', 'vendorName', 'gstin', 'gstRate', 'base', 'createdAt', 'updatedAt', 'sync_status'],
+    'receivables': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'receivedOn', 'utr', 'serviceCategory', 'entryId', 'movedAt', 'createdAt', 'updatedAt', 'sync_status'],
+    'payables': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'paidOn', 'utr', 'serviceCategory', 'entryId', 'movedAt', 'createdAt', 'updatedAt', 'sync_status'],
+    'general_entries': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'invoiceReceivedDate', 'serviceType', 'entryType', 'fy', 'location', 'createdAt', 'updatedAt', 'sync_status'],
+    'master_ledger': ['id', 'vendorCode', 'vendorName', 'month', 'serviceCategory', 'base', 'invoice', 'count', 'rate', 'amount', 'gst', 'status', 'type', 'utr', 'date', 'createdAt', 'updatedAt', 'sync_status'],
+    'deleted_records': ['id', 'originalStore', 'originalId', 'vendorName', 'invoice', 'amount', 'deletedAt', 'createdAt', 'updatedAt', 'sync_status'],
+    'provisions': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'amount', 'gst', 'status', 'date', 'dueDate', 'serviceCategory', 'fy', 'location', 'createdAt', 'updatedAt', 'sync_status'],
+    'payroll_entries': ['id', 'employeeId', 'employeeName', 'base', 'month', 'year', 'basicSalary', 'allowances', 'deductions', 'totalSalary', 'status', 'createdAt', 'updatedAt', 'sync_status'],
+    'leave_balances': ['id', 'employeeId', 'employeeName', 'leaveType', 'totalLeaves', 'usedLeaves', 'balanceLeaves', 'fy', 'createdAt', 'updatedAt', 'sync_status'],
+    'leave_history': ['id', 'employeeId', 'employeeName', 'leaveType', 'fromDate', 'toDate', 'days', 'status', 'reason', 'createdAt', 'updatedAt', 'sync_status'],
+    'employee_contract_history': ['id', 'employeeId', 'employeeName', 'contractType', 'startDate', 'endDate', 'status', 'createdAt', 'updatedAt', 'sync_status'],
+    'advances': ['id', 'employeeId', 'employeeName', 'base', 'amount', 'advanceDate', 'dueDate', 'status', 'utr', 'notes', 'createdAt', 'updatedAt', 'sync_status'],
+    'ledger': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'amount', 'gst', 'status', 'type', 'date', 'utr', 'fy', 'location', 'createdAt', 'updatedAt', 'sync_status'],
+    'assets': ['id', 'assetName', 'assetCode', 'category', 'base', 'purchaseDate', 'cost', 'status', 'location', 'notes', 'createdAt', 'updatedAt', 'sync_status'],
+    'imprests': ['id', 'employeeId', 'employeeName', 'base', 'amount', 'imprestDate', 'dueDate', 'status', 'utr', 'notes', 'createdAt', 'updatedAt', 'sync_status']
 };
 
 // ============================================================
@@ -58,6 +58,11 @@ function normalizePayload(data, allowedFields) {
     const allKeys = [...new Set(data.flatMap(obj => Object.keys(obj)))];
     // Filter to only allowed fields
     const finalKeys = allKeys.filter(key => allowedFields.includes(key));
+    
+    // Ensure sync_status is always present
+    if (!finalKeys.includes('sync_status')) {
+        finalKeys.push('sync_status');
+    }
     
     // Normalize each object to have all keys
     return data.map(obj => {
@@ -74,12 +79,16 @@ function normalizePayload(data, allowedFields) {
                     normalized[key] = obj[key];
                 }
             } else {
-                normalized[key] = null; // ✅ FIX: All objects must have same keys
+                normalized[key] = null; // All objects must have same keys
             }
         }
         // Ensure id exists
         if (!normalized.id && obj.id) {
             normalized.id = obj.id;
+        }
+        // Ensure sync_status has a default value
+        if (!normalized.sync_status) {
+            normalized.sync_status = 'active';
         }
         return normalized;
     });
@@ -322,9 +331,9 @@ class SkyMedDB {
                 return true;
             }
 
-            const allowedFields = TABLE_FIELDS[store] || ['id'];
+            const allowedFields = TABLE_FIELDS[store] || ['id', 'sync_status'];
             
-            // ✅ FIX: Normalize payload - all objects must have same keys
+            // Normalize payload - all objects must have same keys
             const normalizedData = normalizePayload(data, allowedFields);
             
             // Filter out empty objects
@@ -335,13 +344,23 @@ class SkyMedDB {
                 return true;
             }
 
-            // ✅ Check: All objects have same keys
+            // Verify all objects have same keys
             const firstKeys = Object.keys(finalData[0]).sort().join(',');
             const allSame = finalData.every(item => Object.keys(item).sort().join(',') === firstKeys);
             if (!allSame) {
                 console.warn('Objects have different keys for', store);
                 console.warn('First object keys:', Object.keys(finalData[0]));
                 console.warn('Last object keys:', Object.keys(finalData[finalData.length - 1]));
+                // Force normalize again
+                const forcedNormalized = finalData.map(item => {
+                    const normalized = {};
+                    for (const key of Object.keys(finalData[0])) {
+                        normalized[key] = item[key] !== undefined ? item[key] : null;
+                    }
+                    return normalized;
+                });
+                finalData.length = 0;
+                finalData.push(...forcedNormalized);
             }
 
             const url = `${SUPABASE_URL}/rest/v1/${store}`;
@@ -365,6 +384,7 @@ class SkyMedDB {
                 if (response.status === 400) {
                     console.error('Keys in first object:', Object.keys(finalData[0]));
                     console.error('Keys in last object:', Object.keys(finalData[finalData.length - 1]));
+                    console.error('All objects have same structure?', finalData.every(item => Object.keys(item).sort().join(',') === Object.keys(finalData[0]).sort().join(',')));
                 }
                 return false;
             }
@@ -554,6 +574,7 @@ class SkyMedDB {
                 data.createdAt = new Date().toISOString();
             }
             data.updatedAt = new Date().toISOString();
+            data.sync_status = 'active';
             
             if (!this.dataCache[store]) this.dataCache[store] = [];
             this.dataCache[store].push(data);
@@ -647,6 +668,7 @@ class SkyMedDB {
                     data.id = generateId();
                 }
                 data.updatedAt = new Date().toISOString();
+                data.sync_status = data.sync_status || 'active';
                 
                 if (!this.dataCache[store]) this.dataCache[store] = [];
                 const idx = this.dataCache[store].findIndex(item => item.id === data.id);
@@ -732,7 +754,8 @@ class SkyMedDB {
                 originalStore: store,
                 originalId: id,
                 deletedAt: new Date().toISOString(),
-                id: 'DEL_' + Date.now().toString(36) + '_' + id
+                id: 'DEL_' + Date.now().toString(36) + '_' + id,
+                sync_status: 'deleted'
             };
             
             if (item.vendorName) deletedItem.vendorName = item.vendorName;
@@ -770,7 +793,8 @@ class SkyMedDB {
             const recoverItem = { 
                 ...rest, 
                 id: originalId || generateId(),
-                recoveredAt: new Date().toISOString()
+                recoveredAt: new Date().toISOString(),
+                sync_status: 'active'
             };
             
             await this.put(originalStore, recoverItem);
@@ -1256,7 +1280,8 @@ class SkyMedDB {
             date: date || new Date().toISOString().split('T')[0],
             oldValues: oldValues || {},
             newValues: newValues || {},
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            sync_status: 'active'
         };
         await this.put('contract_history', entry);
         this.scheduleSync();
@@ -1293,7 +1318,8 @@ class SkyMedDB {
             utr: '',
             serviceCategory: entry.serviceType || 'Other',
             entryId: entry.id,
-            movedAt: new Date().toISOString()
+            movedAt: new Date().toISOString(),
+            sync_status: 'active'
         };
         const vendor = await this.get('vendors', entry.vendorCode);
         const period = vendor ? vendor.paymentPeriod : 30;
@@ -1329,7 +1355,8 @@ class SkyMedDB {
             utr: '',
             serviceCategory: entry.serviceType || 'Other',
             entryId: entry.id,
-            movedAt: new Date().toISOString()
+            movedAt: new Date().toISOString(),
+            sync_status: 'active'
         };
         const vendor = await this.get('vendors', entry.vendorCode);
         const period = vendor ? vendor.paymentPeriod : 30;
@@ -1363,7 +1390,8 @@ class SkyMedDB {
             status: item.status === 'Received' || item.status === 'Paid' ? 'Received' : 'Pending',
             type: type,
             utr: item.utr || '',
-            date: item.date || new Date().toISOString().split('T')[0]
+            date: item.date || new Date().toISOString().split('T')[0],
+            sync_status: 'active'
         };
         await this.put('master_ledger', masterData);
         return masterData;
@@ -1411,6 +1439,7 @@ class SkyMedDB {
                 try { obj[h] = JSON.parse(values[idx] || '""'); } catch(e) { obj[h] = values[idx] || ''; }
             });
             if (!obj.id) obj.id = generateId();
+            obj.sync_status = 'active';
             const existing = await this.get(store, obj.id);
             if (!existing) {
                 await this.put(store, obj);
@@ -1441,6 +1470,7 @@ class SkyMedDB {
                     for (const store of STORES) {
                         if (backup.data[store] && backup.data[store].length) {
                             for (const item of backup.data[store]) {
+                                item.sync_status = 'active';
                                 const existing = await this.get(store, item.id);
                                 if (!existing) {
                                     await this.put(store, item);
