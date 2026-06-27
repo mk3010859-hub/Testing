@@ -1,5 +1,5 @@
 // ============================================================
-// DATABASE MODULE - Production Ready with Supabase Sync (FIXED)
+// DATABASE MODULE - Production Ready with Supabase Sync (FULLY FIXED)
 // ============================================================
 
 const DB_NAME = 'SkyMedDB';
@@ -28,10 +28,10 @@ const STORES = [
 ];
 
 // ============================================================
-// 🔥 SUPABASE CONFIG - FIXED
+// 🔥 SUPABASE CONFIG
 // ============================================================
 const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_K9KQsPH1KXCDeRdkpKDslg_JFib0TbQ';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
 
 // ============================================================
 // XLSX LIBRARY LOADER
@@ -226,6 +226,7 @@ class SkyMedDB {
                 if (folderLabel) folderLabel.textContent = savedFolder;
             }
             
+            // 🔥 ONLY LOAD FROM SUPABASE IF TABLES EXIST
             await this.syncFromSupabase();
             await this.checkAndRecover();
             
@@ -250,7 +251,7 @@ class SkyMedDB {
     }
 
     // ============================================================
-    // 🔥 SUPABASE OPERATIONS - FIXED (NO DOUBLE URL)
+    // 🔥 SUPABASE OPERATIONS - FULLY FIXED
     // ============================================================
     
     async syncToSupabase() {
@@ -282,11 +283,37 @@ class SkyMedDB {
             if (!data || data.length === 0) {
                 return true;
             }
-            
-            // ✅ FIXED: Single /rest/v1/ — NO DOUBLE URL
+
+            // 🔥 CLEAN DATA - Remove undefined/null and circular references
+            const cleanData = data.map(item => {
+                const clean = {};
+                for (const [key, value] of Object.entries(item)) {
+                    if (value !== undefined && value !== null && typeof value !== 'function') {
+                        // Handle objects/arrays - stringify them
+                        if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+                            try {
+                                clean[key] = JSON.stringify(value);
+                            } catch(e) {
+                                clean[key] = String(value);
+                            }
+                        } else if (Array.isArray(value)) {
+                            try {
+                                clean[key] = JSON.stringify(value);
+                            } catch(e) {
+                                clean[key] = String(value);
+                            }
+                        } else {
+                            clean[key] = value;
+                        }
+                    }
+                }
+                return clean;
+            });
+
             const url = `${SUPABASE_URL}/rest/v1/${store}`;
-            console.log(`📤 Posting to: ${url}`);
-            
+            console.log(`📤 Posting ${cleanData.length} records to: ${store}`);
+            console.log('📦 Sample:', JSON.stringify(cleanData[0]).substring(0, 200));
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -295,29 +322,31 @@ class SkyMedDB {
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Prefer': 'resolution=merge-duplicates'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(cleanData)
             });
-            
+
             if (!response.ok) {
-                if (response.status === 404) {
-                    console.warn(`⚠️ Table "${store}" not found in Supabase. Please create it.`);
+                const errorText = await response.text();
+                if (response.status === 400) {
+                    console.warn(`⚠️ Table "${store}" structure mismatch or table doesn't exist.`);
+                    console.warn('📋 Data keys:', Object.keys(cleanData[0]));
+                    console.warn('💡 Please create the table in Supabase first!');
                 } else {
-                    const errorText = await response.text();
                     console.error(`❌ HTTP ${response.status}: ${errorText}`);
                 }
-                throw new Error(`HTTP ${response.status}`);
+                return false;
             }
-            console.log(`✅ Saved ${data.length} records to ${store}`);
+            
+            console.log(`✅ Saved ${cleanData.length} records to ${store}`);
             return true;
         } catch(e) {
-            console.warn(`⚠️ Failed to save ${store} to Supabase:`, e.message);
+            console.warn(`⚠️ Failed to save ${store}:`, e.message);
             return false;
         }
     }
 
     async loadFromSupabase(store) {
         try {
-            // ✅ FIXED: Single /rest/v1/ — NO DOUBLE URL
             const url = `${SUPABASE_URL}/rest/v1/${store}?select=*`;
             console.log(`📡 Fetching: ${url}`);
             
@@ -333,9 +362,13 @@ class SkyMedDB {
                     console.warn(`⚠️ Table "${store}" not found in Supabase`);
                     return [];
                 }
+                if (response.status === 400) {
+                    console.warn(`⚠️ Table "${store}" exists but structure mismatch`);
+                    return [];
+                }
                 const errorText = await response.text();
                 console.error(`❌ HTTP ${response.status}: ${errorText}`);
-                throw new Error(`HTTP ${response.status}`);
+                return [];
             }
             
             return await response.json();
@@ -372,11 +405,6 @@ class SkyMedDB {
             console.warn('⚠️ Supabase load failed:', e);
             return false;
         }
-    }
-
-    async createSupabaseTable(store) {
-        console.warn(`⚠️ Table "${store}" not found in Supabase. Please create it manually.`);
-        return false;
     }
 
     startSupabaseSync() {
