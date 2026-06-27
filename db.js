@@ -1,5 +1,5 @@
 // ============================================================
-// DATABASE MODULE - Production Ready with Supabase Sync (FIXED URL)
+// DATABASE MODULE - Production Ready with Supabase Sync
 // ============================================================
 
 const DB_NAME = 'SkyMedDB';
@@ -13,13 +13,17 @@ const STORES = [
 ];
 
 // ============================================================
-// 🔥 SUPABASE CONFIG - YAHAN SIRF BASE URL HAI (NO /rest/v1/)
+// SUPABASE CONFIG
 // ============================================================
 const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_K9KQsPH1KXCDeRdkpKDslg_JFib0TbQ';
+
+// Use ANON key for API calls (it's the one that works)
+const SUPABASE_KEY = SUPABASE_ANON_KEY;
 
 // ============================================================
-// 🔥 TABLE-SPECIFIC ALLOWED FIELDS
+// TABLE-SPECIFIC ALLOWED FIELDS
 // ============================================================
 const TABLE_FIELDS = {
     'vendors': ['id', 'vendorCode', 'vendorName', 'base', 'invoice', 'count', 'rate', 'rateType', 'amount', 'gst', 'status', 'date', 'dueDate', 'createdAt', 'updatedAt', 'paymentPeriod', 'contact', 'email', 'address', 'serviceCategory', 'entryType', 'fy', 'location'],
@@ -57,7 +61,7 @@ function loadXLSX() {
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
         script.onload = () => resolve(XLSX);
         script.onerror = () => {
-            console.warn('⚠️ XLSX CDN failed');
+            console.warn('XLSX CDN failed');
             resolve(null);
         };
         document.head.appendChild(script);
@@ -95,7 +99,7 @@ class SkyMedDB {
             const cached = localStorage.getItem('skymed_cache_v1');
             if (cached) {
                 this.dataCache = JSON.parse(cached);
-                console.log('📦 Cache loaded from localStorage');
+                console.log('Cache loaded from localStorage');
             }
             const idMap = localStorage.getItem('skymed_last_ids');
             if (idMap) {
@@ -151,7 +155,7 @@ class SkyMedDB {
         }
         const nextNum = maxNum + 1;
         const id = 'PA' + String(nextNum).padStart(4, '0');
-        console.log(`🔑 Generated Employee ID: ${id} (from ${maxNum})`);
+        console.log('Generated Employee ID:', id, '(from', maxNum, ')');
         return id;
     }
 
@@ -180,7 +184,7 @@ class SkyMedDB {
         }
         const nextNum = maxNum + 1;
         const id = prefix + String(nextNum).padStart(4, '0');
-        console.log(`🔑 Generated ID for ${store}: ${id}`);
+        console.log('Generated ID for', store, ':', id);
         return id;
     }
 
@@ -201,9 +205,9 @@ class SkyMedDB {
             
             this.XLSX = await loadXLSX();
             if (this.XLSX) {
-                console.log('✅ XLSX library loaded');
+                console.log('XLSX library loaded');
             } else {
-                console.warn('⚠️ XLSX library not loaded');
+                console.warn('XLSX library not loaded');
             }
             
             try {
@@ -229,12 +233,12 @@ class SkyMedDB {
             
             this.isInitialized = true;
             
-            console.log('✅ Database initialized (Production Mode)');
-            console.log('⏰ Auto-save every 30 seconds');
-            console.log('☁️ Supabase sync every 60 seconds');
-            console.log('🔁 Force Reload every 5 seconds');
-            console.log('📦 Persistent Cache active');
-            console.log('📊 Stores:', STORES.join(', '));
+            console.log('Database initialized (Production Mode)');
+            console.log('Auto-save every 30 seconds');
+            console.log('Supabase sync every 60 seconds');
+            console.log('Force Reload every 5 seconds');
+            console.log('Persistent Cache active');
+            console.log('Stores:', STORES.join(', '));
             
             window.addEventListener('beforeunload', () => {
                 this.triggerSync();
@@ -242,18 +246,18 @@ class SkyMedDB {
             });
             
         } catch(e) {
-            console.error('❌ Init failed:', e);
+            console.error('Init failed:', e);
             setTimeout(() => this.init(), 5000);
         }
     }
 
     // ============================================================
-    // 🔥 SUPABASE OPERATIONS - FIXED URL (NO DOUBLE /rest/v1/)
+    // SUPABASE OPERATIONS
     // ============================================================
     
     async syncToSupabase() {
         try {
-            console.log('☁️ Syncing to Supabase...');
+            console.log('Syncing to Supabase...');
             const allData = {};
             for (const store of STORES) {
                 allData[store] = await this.getAll(store);
@@ -263,14 +267,14 @@ class SkyMedDB {
                 if (allData[store] && allData[store].length > 0) {
                     await this.saveStoreToSupabase(store, allData[store]);
                 } else {
-                    console.log(`⏭️ Skipping ${store} - no data`);
+                    console.log('Skipping', store, '- no data');
                 }
             }
             
-            console.log('✅ Supabase sync completed');
+            console.log('Supabase sync completed');
             return true;
         } catch(e) {
-            console.warn('⚠️ Supabase sync failed:', e);
+            console.warn('Supabase sync failed:', e);
             return false;
         }
     }
@@ -281,15 +285,13 @@ class SkyMedDB {
                 return true;
             }
 
-            // 🔥 Get allowed fields for this table
-            const allowed = TABLE_FIELDS[store] || ['id', 'createdAt', 'updatedAt'];
+            const allowedFields = TABLE_FIELDS[store] || ['id'];
             
-            // 🔥 CLEAN DATA — Sirf allowed fields
             const cleanData = data.map(item => {
                 const clean = {};
-                for (const key of allowed) {
+                for (const key of allowedFields) {
                     if (item[key] !== undefined && item[key] !== null) {
-                        if (typeof item[key] === 'object' && item[key] !== null) {
+                        if (typeof item[key] === 'object') {
                             try {
                                 clean[key] = JSON.stringify(item[key]);
                             } catch(e) {
@@ -306,16 +308,15 @@ class SkyMedDB {
                 return clean;
             });
 
-            const finalData = cleanData.filter(item => item.id && Object.keys(item).length > 1);
+            const finalData = cleanData.filter(item => item.id && Object.keys(item).length >= 1);
             
             if (finalData.length === 0) {
-                console.log(`⏭️ No valid data for ${store}`);
+                console.log('No valid data for', store);
                 return true;
             }
 
-            // ✅ FIXED: SIRF EK BAAR /rest/v1/ USE KARO
             const url = `${SUPABASE_URL}/rest/v1/${store}`;
-            console.log(`📤 Posting ${finalData.length} records to ${store}`);
+            console.log('Posting', finalData.length, 'records to', store);
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -330,21 +331,23 @@ class SkyMedDB {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`❌ ${store} Error ${response.status}:`, errorText);
+                console.error('Error', response.status, 'for', store, ':', errorText);
+                if (response.status === 400) {
+                    console.error('Data keys sent:', Object.keys(finalData[0]));
+                }
                 return false;
             }
             
-            console.log(`✅ Saved ${finalData.length} records to ${store}`);
+            console.log('Saved', finalData.length, 'records to', store);
             return true;
         } catch(e) {
-            console.warn(`⚠️ Failed to save ${store}:`, e.message);
+            console.warn('Failed to save', store, ':', e.message);
             return false;
         }
     }
 
     async loadFromSupabase(store) {
         try {
-            // ✅ FIXED: SIRF EK BAAR /rest/v1/
             const url = `${SUPABASE_URL}/rest/v1/${store}?select=*`;
             
             const response = await fetch(url, {
@@ -356,28 +359,24 @@ class SkyMedDB {
             
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.warn(`⚠️ Table "${store}" not found in Supabase`);
-                    return [];
-                }
-                if (response.status === 400) {
-                    console.warn(`⚠️ Table "${store}" exists but structure mismatch`);
+                    console.warn('Table', store, 'not found in Supabase');
                     return [];
                 }
                 const errorText = await response.text();
-                console.error(`❌ HTTP ${response.status}: ${errorText}`);
+                console.error('HTTP', response.status, ':', errorText);
                 return [];
             }
             
             return await response.json();
         } catch(e) {
-            console.warn(`⚠️ Failed to load ${store} from Supabase:`, e.message);
+            console.warn('Failed to load', store, 'from Supabase:', e.message);
             return null;
         }
     }
 
     async syncFromSupabase() {
         try {
-            console.log('☁️ Loading data from Supabase...');
+            console.log('Loading data from Supabase...');
             let loaded = 0;
             
             for (const store of STORES) {
@@ -396,10 +395,10 @@ class SkyMedDB {
             }
             
             this.saveCacheToStorage();
-            console.log(`📂 Loaded ${loaded} records from Supabase`);
+            console.log('Loaded', loaded, 'records from Supabase');
             return true;
         } catch(e) {
-            console.warn('⚠️ Supabase load failed:', e);
+            console.warn('Supabase load failed:', e);
             return false;
         }
     }
@@ -409,7 +408,7 @@ class SkyMedDB {
         this.supabaseSyncInterval = setInterval(() => {
             this.syncToSupabase();
         }, 60000);
-        console.log('☁️ Supabase sync started (every 60 seconds)');
+        console.log('Supabase sync started (every 60 seconds)');
     }
 
     // ============================================================
@@ -431,14 +430,14 @@ class SkyMedDB {
             request.onupgradeneeded = (e) => {
                 const db = e.target.result;
                 const oldVersion = e.oldVersion;
-                console.log(`🔄 Database upgrade: ${oldVersion} → ${DB_VERSION}`);
+                console.log('Database upgrade:', oldVersion, '->', DB_VERSION);
                 
                 if (oldVersion > 0 && oldVersion < DB_VERSION) {
                     const existingStores = db.objectStoreNames;
                     for (const store of existingStores) {
                         try {
                             db.deleteObjectStore(store);
-                            console.log(`🗑️ Deleted old store: ${store}`);
+                            console.log('Deleted old store:', store);
                         } catch(e) {
                             console.warn('Delete store failed:', e);
                         }
@@ -459,17 +458,17 @@ class SkyMedDB {
                         objStore.createIndex('location', 'location', { unique: false });
                         objStore.createIndex('employeeId', 'employeeId', { unique: false });
                         objStore.createIndex('empId', 'empId', { unique: false });
-                        console.log(`✅ Created store: ${store}`);
+                        console.log('Created store:', store);
                     }
                 });
             };
             
             request.onsuccess = (e) => {
                 this.db = e.target.result;
-                console.log('✅ Database opened successfully');
+                console.log('Database opened successfully');
                 
                 this.db.onversionchange = () => {
-                    console.log('🔄 Database version change detected, closing...');
+                    console.log('Database version change detected, closing...');
                     if (this.db) {
                         try {
                             this.db.close();
@@ -482,12 +481,12 @@ class SkyMedDB {
             };
             
             request.onerror = (e) => {
-                console.error('❌ Database error:', e.target.error);
+                console.error('Database error:', e.target.error);
                 reject(e.target.error);
             };
             
             request.onblocked = () => {
-                console.warn('⚠️ Database blocked - close other tabs');
+                console.warn('Database blocked - close other tabs');
                 reject(new Error('Database blocked'));
             };
         });
@@ -533,11 +532,11 @@ class SkyMedDB {
             this.scheduleSync();
             this.syncToSupabase();
             
-            console.log(`✅ Added to ${store}:`, data.id);
+            console.log('Added to', store, ':', data.id);
             return result;
             
         } catch(e) {
-            console.error(`❌ Error adding to ${store}:`, e);
+            console.error('Error adding to', store, ':', e);
             throw e;
         }
     }
@@ -596,11 +595,11 @@ class SkyMedDB {
                     resolve(result);
                 };
                 req.onerror = () => {
-                    console.warn(`⚠️ Error reading ${store}:`, req.error);
+                    console.warn('Error reading', store, ':', req.error);
                     resolve([]);
                 };
             } catch(e) {
-                console.warn(`⚠️ Exception reading ${store}:`, e);
+                console.warn('Exception reading', store, ':', e);
                 resolve([]);
             }
         });
@@ -722,11 +721,11 @@ class SkyMedDB {
             this.scheduleSync();
             this.syncToSupabase();
             
-            console.log(`🗑️ Soft deleted from ${store}:`, id);
+            console.log('Soft deleted from', store, ':', id);
             return deletedItem;
             
         } catch(e) {
-            console.error(`❌ Soft delete failed:`, e);
+            console.error('Soft delete failed:', e);
             throw e;
         }
     }
@@ -748,11 +747,11 @@ class SkyMedDB {
             this.scheduleSync();
             this.syncToSupabase();
             
-            console.log(`♻️ Recovered from deleted:`, id);
+            console.log('Recovered from deleted:', id);
             return recoverItem;
             
         } catch(e) {
-            console.error(`❌ Recovery failed:`, e);
+            console.error('Recovery failed:', e);
             throw e;
         }
     }
@@ -766,10 +765,10 @@ class SkyMedDB {
             await this.delete('deleted_records', id);
             this.scheduleSync();
             this.syncToSupabase();
-            console.log(`🗑️ Permanently deleted:`, id);
+            console.log('Permanently deleted:', id);
             return true;
         } catch(e) {
-            console.error(`❌ Permanent delete failed:`, e);
+            console.error('Permanent delete failed:', e);
             throw e;
         }
     }
@@ -789,7 +788,7 @@ class SkyMedDB {
             this.saveCacheToStorage();
             await this.saveJSONBackup(data);
             
-            console.log('💾 Data saved to LocalStorage');
+            console.log('Data saved to LocalStorage');
         } catch(e) { 
             console.warn('LocalStorage save failed:', e); 
         }
@@ -808,7 +807,7 @@ class SkyMedDB {
                     }
                 }
                 this.saveCacheToStorage();
-                console.log(`📂 Loaded ${loaded} records from LocalStorage to Cache`);
+                console.log('Loaded', loaded, 'records from LocalStorage to Cache');
             }
             return true;
         } catch(e) { 
@@ -822,11 +821,11 @@ class SkyMedDB {
     // ============================================================
     async forceReload() {
         try {
-            console.log('🔄 Force reloading data...');
+            console.log('Force reloading data...');
             
             const saved = localStorage.getItem('skymed_data_v7');
             if (!saved) {
-                console.warn('⚠️ No data in localStorage!');
+                console.warn('No data in localStorage!');
                 return false;
             }
             
@@ -849,16 +848,16 @@ class SkyMedDB {
             
             this.saveCacheToStorage();
             
-            console.log(`📂 Force reload: ${loaded} new records added to cache`);
+            console.log('Force reload:', loaded, 'new records added to cache');
             
             this.lastRefreshTime = new Date();
             localStorage.setItem('skymed_last_refresh', this.lastRefreshTime.toISOString());
             
-            console.log('✅ Force reload completed at', this.lastRefreshTime.toLocaleString());
+            console.log('Force reload completed at', this.lastRefreshTime.toLocaleString());
             return true;
             
         } catch(e) {
-            console.error('❌ Force reload failed:', e);
+            console.error('Force reload failed:', e);
             return false;
         }
     }
@@ -868,7 +867,7 @@ class SkyMedDB {
         this.forceReloadInterval = setInterval(() => {
             this.forceReload();
         }, 5000);
-        console.log('🔁 Force Reload started (every 5 seconds)');
+        console.log('Force Reload started (every 5 seconds)');
     }
 
     // ============================================================
@@ -883,9 +882,9 @@ class SkyMedDB {
             const writable = await fileHandle.createWritable();
             await writable.write(JSON.stringify({version:'7.0',timestamp:new Date().toISOString(),data:data}));
             await writable.close();
-            console.log(`✅ JSON Backup saved: ${fileName}`);
+            console.log('JSON Backup saved:', fileName);
         } catch(e) {
-            console.warn('⚠️ JSON Backup failed:', e);
+            console.warn('JSON Backup failed:', e);
         }
     }
 
@@ -896,7 +895,7 @@ class SkyMedDB {
         if (!this.folderHandle || !this.XLSX) return false;
         
         try {
-            console.log('📊 Creating Excel backup...');
+            console.log('Creating Excel backup...');
             const allData = {};
             let totalRecords = 0;
             const storeStats = [];
@@ -946,11 +945,11 @@ class SkyMedDB {
             await writable.write(excelData);
             await writable.close();
             
-            console.log(`✅ Excel Backup saved: SkyMed_Data.xlsx (${totalRecords} records)`);
+            console.log('Excel Backup saved: SkyMed_Data.xlsx (', totalRecords, 'records)');
             return true;
             
         } catch(e) {
-            console.error('❌ Excel Backup failed:', e);
+            console.error('Excel Backup failed:', e);
             return false;
         }
     }
@@ -961,23 +960,23 @@ class SkyMedDB {
     async selectFolder() {
         try {
             if (!window.showDirectoryPicker) {
-                console.log('📁 Folder selection not supported. Using LocalStorage only.');
+                console.log('Folder selection not supported. Using LocalStorage only.');
                 await this.saveToLocalStorage();
                 const folderLabel = document.getElementById('folderLabel');
                 if (folderLabel) {
-                    folderLabel.textContent = '💾 Local Storage (Auto-Save)';
+                    folderLabel.textContent = 'Local Storage (Auto-Save)';
                     folderLabel.style.color = '#7bc5f5';
                 }
                 if (!sessionStorage.getItem('skymed_folder_alert_shown')) {
                     alert(
-                        '📁 Folder selection not supported in this browser.\n\n' +
-                        '✅ Your data is automatically saved to:\n' +
-                        '   • IndexedDB (SQLite-like database)\n' +
-                        '   • Local Storage (backup)\n' +
-                        '   • Persistent Cache\n' +
-                        '   • Auto-save every 30 seconds\n' +
-                        '   • Supabase Cloud Sync\n\n' +
-                        '✅ No data loss! Everything is saved automatically.'
+                        'Folder selection not supported in this browser.\n\n' +
+                        'Your data is automatically saved to:\n' +
+                        '   IndexedDB (SQLite-like database)\n' +
+                        '   Local Storage (backup)\n' +
+                        '   Persistent Cache\n' +
+                        '   Auto-save every 30 seconds\n' +
+                        '   Supabase Cloud Sync\n\n' +
+                        'No data loss! Everything is saved automatically.'
                     );
                     sessionStorage.setItem('skymed_folder_alert_shown', 'true');
                 }
@@ -1010,13 +1009,13 @@ class SkyMedDB {
                 const excelSuccess = await this.saveExcelBackup();
                 
                 if (excelSuccess) {
-                    alert('✅ Folder selected: ' + this.folderHandle.name + 
-                          '\n📄 Excel Backup: SkyMed_Data.xlsx' +
-                          '\n📄 JSON Backup: SkyMed_Backup.json' +
-                          '\n☁️ Supabase Cloud Sync: Active' +
-                          '\n💾 All data saved successfully!');
+                    alert('Folder selected: ' + this.folderHandle.name + 
+                          '\nExcel Backup: SkyMed_Data.xlsx' +
+                          '\nJSON Backup: SkyMed_Backup.json' +
+                          '\nSupabase Cloud Sync: Active' +
+                          '\nAll data saved successfully!');
                 } else {
-                    alert('⚠️ Folder selected but Excel backup failed.\n' +
+                    alert('Folder selected but Excel backup failed.\n' +
                           'Data is still saved to LocalStorage and IndexedDB.');
                 }
                 
@@ -1024,7 +1023,7 @@ class SkyMedDB {
                 
             } catch(e) {
                 if (e.name === 'AbortError') {
-                    console.log('📁 User cancelled folder selection');
+                    console.log('User cancelled folder selection');
                     if (!this.db) {
                         await this.openDB();
                     }
@@ -1057,11 +1056,11 @@ class SkyMedDB {
             }
             
             if (!hasData) {
-                console.log('🔄 No data in IndexedDB, attempting recovery...');
+                console.log('No data in IndexedDB, attempting recovery...');
                 
                 const supabaseData = await this.syncFromSupabase();
                 if (supabaseData) {
-                    console.log('✅ Data recovered from Supabase!');
+                    console.log('Data recovered from Supabase!');
                     return;
                 }
                 
@@ -1078,9 +1077,9 @@ class SkyMedDB {
                 }
                 
                 if (recovered) {
-                    console.log('✅ Data recovered from LocalStorage!');
+                    console.log('Data recovered from LocalStorage!');
                 } else {
-                    console.log('⚠️ No data found in any storage layer.');
+                    console.log('No data found in any storage layer.');
                 }
             }
         } catch(e) {
@@ -1094,12 +1093,12 @@ class SkyMedDB {
     async syncToFolder() {
         if (!this.folderHandle) {
             await this.saveToLocalStorage();
-            console.log('💾 Data saved to LocalStorage');
+            console.log('Data saved to LocalStorage');
             return true;
         }
         
         if (this.isSyncing) {
-            console.log('⏳ Sync already in progress');
+            console.log('Sync already in progress');
             return false;
         }
         
@@ -1121,11 +1120,11 @@ class SkyMedDB {
             this.lastSyncTime = new Date();
             localStorage.setItem('skymed_last_sync', this.lastSyncTime.toISOString());
             
-            console.log(`✅ Sync completed at ${this.lastSyncTime.toLocaleString()}`);
+            console.log('Sync completed at', this.lastSyncTime.toLocaleString());
             success = true;
             
         } catch(e) {
-            console.error('❌ Sync failed:', e);
+            console.error('Sync failed:', e);
             success = false;
         }
         
@@ -1138,7 +1137,7 @@ class SkyMedDB {
         this.syncInterval = setInterval(() => {
             this.scheduleSync();
         }, 30000);
-        console.log('⏰ Auto-sync started (every 30 seconds)');
+        console.log('Auto-sync started (every 30 seconds)');
     }
 
     scheduleSync() {
@@ -1353,7 +1352,7 @@ class SkyMedDB {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${store}_${new Date().toISOString().slice(0,10)}.csv`;
+        a.download = store + '_' + new Date().toISOString().slice(0,10) + '.csv';
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -1389,7 +1388,7 @@ class SkyMedDB {
         }
         this.scheduleSync();
         this.syncToSupabase();
-        alert(`✅ ${imported} new records imported to ${store}!`);
+        alert('Imported ' + imported + ' new records to ' + store + '!');
     }
 
     // ============================================================
@@ -1440,7 +1439,7 @@ class SkyMedDB {
         try {
             const saved = localStorage.getItem('skymed_data_v7');
             if (!saved) {
-                console.warn('⚠️ No data in localStorage!');
+                console.warn('No data in localStorage!');
                 return false;
             }
             
@@ -1452,11 +1451,11 @@ class SkyMedDB {
                 }
             }
             
-            console.log(`📊 Data integrity check: ${totalRecords} total records`);
+            console.log('Data integrity check:', totalRecords, 'total records');
             return totalRecords > 0;
             
         } catch(e) {
-            console.error('❌ Integrity check failed:', e);
+            console.error('Integrity check failed:', e);
             return false;
         }
     }
@@ -1498,16 +1497,16 @@ window.generateId = generateId;
 window.getMonthYear = getMonthYear;
 
 async function reloadAllData() {
-    console.log('🔄 Reloading all data...');
+    console.log('Reloading all data...');
     await db.forceReload();
     await db.loadFromLocalStorage();
     await db.syncFromSupabase();
-    console.log('✅ All data reloaded!');
+    console.log('All data reloaded!');
 }
 window.reloadAllData = reloadAllData;
 
-console.log('✅ Database module loaded! (Production Mode - Supabase Sync)');
-console.log('📦 Data safe on tab switch! Cache is persistent.');
-console.log('⏰ Auto-save every 30 seconds');
-console.log('☁️ Supabase sync every 60 seconds');
-console.log('🔁 Force Reload every 5 seconds');
+console.log('Database module loaded! (Production Mode - Supabase Sync)');
+console.log('Data safe on tab switch! Cache is persistent.');
+console.log('Auto-save every 30 seconds');
+console.log('Supabase sync every 60 seconds');
+console.log('Force Reload every 5 seconds');
