@@ -1,38 +1,37 @@
 // ============================================================
-// DATABASE MODULE - Production Ready with Supabase Sync
+// DATABASE MODULE - Production Ready with Supabase Sync (FIXED)
 // ============================================================
 
 const DB_NAME = 'SkyMedDB';
-const DB_VERSION = 16;  // 🔥 Version increase for fresh start
+const DB_VERSION = 16;
 const STORES = [
-    // ✅ Exact match with Supabase table names
-    'vendors',                 // ✅ master.html
-    'contracts',               // ✅ contracts.html
-    'general_entries',         // ✅ general.html (FIXED: was 'general')
-    'receivables',             // ✅ receivables.html
-    'payables',                // ✅ payables.html
-    'master_ledger',           // ✅ ledger.html (FIXED: was 'master')
-    'contract_history',        // ✅ contracts.html (FIXED: was 'contractHistory')
-    'deleted_records',         // ✅ deleted.html (FIXED: was 'deletedRecords')
-    'app_settings',            // ✅ settings.html (FIXED: was 'settings')
-    'provisions',              // ✅ provision.html
-    'payroll_entries',         // ✅ payroll.html (FIXED: was 'payroll')
-    'employees',               // ✅ payroll.html
-    'gst_details',             // ✅ payroll.html, settings.html (FIXED: was 'gstDetails')
-    'leave_balances',          // ✅ payroll.html (FIXED: was 'leaveBalances')
-    'leave_history',           // ✅ payroll.html (FIXED: was 'leaveHistory')
-    'employee_contract_history', // ✅ payroll.html (FIXED: was 'employeeContractHistory')
-    'advances',                // ✅ advance.html
-    'ledger',                  // ✅ ledger.html
-    'assets',                  // ✅ assets.html
-    'imprests'                 // ✅ imprest.html
+    'vendors',
+    'contracts',
+    'general_entries',
+    'receivables',
+    'payables',
+    'master_ledger',
+    'contract_history',
+    'deleted_records',
+    'app_settings',
+    'provisions',
+    'payroll_entries',
+    'employees',
+    'gst_details',
+    'leave_balances',
+    'leave_history',
+    'employee_contract_history',
+    'advances',
+    'ledger',
+    'assets',
+    'imprests'
 ];
 
 // ============================================================
-// 🔥 SUPABASE CONFIG - Yahan apni values daalo
+// 🔥 SUPABASE CONFIG - FIXED
 // ============================================================
 const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjd3FvZnJ1eHR2emVxeHFtamV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNzg1NTQsImV4cCI6MjA5Nzg1NDU1NH0.sSvKio186bbjyHj2vf7RAU59UrhEsZBnAe6lHCsNXmY';
+const SUPABASE_KEY = 'sb_publishable_K9KQsPH1KXCDeRdkpKDslg_JFib0TbQ';
 
 // ============================================================
 // XLSX LIBRARY LOADER
@@ -251,7 +250,7 @@ class SkyMedDB {
     }
 
     // ============================================================
-    // SUPABASE OPERATIONS - ONLINE SYNC (FIXED)
+    // 🔥 SUPABASE OPERATIONS - FIXED (NO DOUBLE URL)
     // ============================================================
     
     async syncToSupabase() {
@@ -283,89 +282,12 @@ class SkyMedDB {
             if (!data || data.length === 0) {
                 return true;
             }
-
-            // 🔥 FIX: Clean data before sending to Supabase
-            const cleanedData = data.map(item => {
-                const clean = { ...item };
-                
-                // Remove undefined values
-                Object.keys(clean).forEach(key => {
-                    if (clean[key] === undefined) {
-                        delete clean[key];
-                    }
-                });
-                
-                // Convert ID to string (Supabase TEXT type)
-                if (clean.id !== undefined && clean.id !== null) {
-                    clean.id = String(clean.id);
-                }
-                
-                // Ensure numeric fields are numbers
-                const numericFields = ['gst', 'payment_period', 'rate', 'amount', 'count', 
-                                       'debit', 'credit', 'balance', 'monthly_salary', 
-                                       'total_salary', 'imprest_amount', 'net_salary',
-                                       'deduction', 'food_total', 'accommodation_total',
-                                       'transport_total', 'other_total', 'bill_total',
-                                       'pl_balance', 'cl_balance', 'sl_balance',
-                                       'pl_used', 'cl_used', 'sl_used', 'total_leave',
-                                       'abatement_percent', 'extra_hours', 'working_days',
-                                       'week_off', 'extra_shifts', 'pl', 'cl', 'sl',
-                                       'revisions', 'backup_frequency', 'items_per_page'];
-                numericFields.forEach(field => {
-                    if (clean[field] !== undefined && clean[field] !== null) {
-                        clean[field] = parseFloat(clean[field]) || 0;
-                    }
-                });
-                
-                // Ensure boolean fields
-                const booleanFields = ['provision_applicable', 'extended', 'is_credit_note', 
-                                       'active', 'dark_mode', 'notifications', 'auto_backup',
-                                       'compact_view'];
-                booleanFields.forEach(field => {
-                    if (clean[field] !== undefined) {
-                        clean[field] = clean[field] === true || clean[field] === 'true';
-                    }
-                });
-                
-                // Convert date fields to ISO string
-                const dateFields = ['date', 'due_date', 'received_on', 'paid_on', 
-                                   'start_date', 'end_date', 'issue_date', 'return_date',
-                                   'purchase_date', 'warranty_date', 'deleted_at',
-                                   'created_at', 'updated_at', 'last_updated',
-                                   'hod_approval_date', 'shared_finance_date',
-                                   'invoice_received_date', 'doj', 'inactive_from',
-                                   'inactive_to', 'issue_date', 'from_date', 'to_date'];
-                dateFields.forEach(field => {
-                    if (clean[field] && typeof clean[field] === 'string') {
-                        const d = new Date(clean[field]);
-                        if (!isNaN(d.getTime())) {
-                            clean[field] = d.toISOString();
-                        }
-                    }
-                });
-                
-                // Ensure JSON fields are objects
-                const jsonFields = ['adjustments', 'months', 'history', 'bills', 'data',
-                                   'tabs', 'columns', 'links', 'custom_fields', 
-                                   'validations', 'quick_actions', 'old_values', 'new_values'];
-                jsonFields.forEach(field => {
-                    if (clean[field] !== undefined && clean[field] !== null) {
-                        if (typeof clean[field] === 'string') {
-                            try {
-                                clean[field] = JSON.parse(clean[field]);
-                            } catch(e) {
-                                clean[field] = {};
-                            }
-                        }
-                    }
-                });
-                
-                return clean;
-            });
-
-            console.log(`📤 Sending ${cleanedData.length} records to ${store}`);
-
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/${store}?on_conflict=id`, {
+            
+            // ✅ FIXED: Single /rest/v1/ — NO DOUBLE URL
+            const url = `${SUPABASE_URL}/rest/v1/${store}`;
+            console.log(`📤 Posting to: ${url}`);
+            
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -373,27 +295,33 @@ class SkyMedDB {
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Prefer': 'resolution=merge-duplicates'
                 },
-                body: JSON.stringify(cleanedData)
+                body: JSON.stringify(data)
             });
-
+            
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`❌ Supabase error for ${store}:`, response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
+                if (response.status === 404) {
+                    console.warn(`⚠️ Table "${store}" not found in Supabase. Please create it.`);
+                } else {
+                    const errorText = await response.text();
+                    console.error(`❌ HTTP ${response.status}: ${errorText}`);
+                }
+                throw new Error(`HTTP ${response.status}`);
             }
-            
-            console.log(`✅ Saved ${cleanedData.length} records to ${store}`);
+            console.log(`✅ Saved ${data.length} records to ${store}`);
             return true;
-            
         } catch(e) {
-            console.warn(`⚠️ Failed to save ${store} to Supabase:`, e);
+            console.warn(`⚠️ Failed to save ${store} to Supabase:`, e.message);
             return false;
         }
     }
 
     async loadFromSupabase(store) {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/${store}`, {
+            // ✅ FIXED: Single /rest/v1/ — NO DOUBLE URL
+            const url = `${SUPABASE_URL}/rest/v1/${store}?select=*`;
+            console.log(`📡 Fetching: ${url}`);
+            
+            const response = await fetch(url, {
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`
@@ -405,12 +333,14 @@ class SkyMedDB {
                     console.warn(`⚠️ Table "${store}" not found in Supabase`);
                     return [];
                 }
+                const errorText = await response.text();
+                console.error(`❌ HTTP ${response.status}: ${errorText}`);
                 throw new Error(`HTTP ${response.status}`);
             }
             
             return await response.json();
         } catch(e) {
-            console.warn(`⚠️ Failed to load ${store} from Supabase:`, e);
+            console.warn(`⚠️ Failed to load ${store} from Supabase:`, e.message);
             return null;
         }
     }
@@ -1037,7 +967,6 @@ class SkyMedDB {
                     try {
                         this.db.close();
                         this.db = null;
-                        console.log('🔄 Database closed before folder selection');
                     } catch(e) {
                         console.warn('Database close error:', e);
                     }
