@@ -112,32 +112,32 @@
         <i class="fas fa-notes-medical"></i> <span>SkyMed</span>
         <small>v6.0</small>
     </div>
-  <div class="nav">
-    <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
-    <a href="master.html" class="active"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
-    <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
-    <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
-    
-    <div class="nav-group">
-        <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
-            <i class="fas fa-coins"></i> <span>Finance</span>
-            <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+    <div class="nav">
+        <a href="index.html"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+        <a href="master.html"><i class="fas fa-building"></i> <span>Master Vendor</span></a>
+        <a href="contracts.html"><i class="fas fa-file-contract"></i> <span>Contracts</span></a>
+        <a href="general.html"><i class="fas fa-clipboard-list"></i> <span>General Entry</span></a>
+        
+        <div class="nav-group">
+            <div class="nav-group-header" onclick="toggleSubMenu('financeSub')">
+                <i class="fas fa-coins"></i> <span>Finance</span>
+                <i class="fas fa-chevron-down" id="financeArrow" style="margin-left:auto;font-size:.7rem;transition:.3s;"></i>
+            </div>
+            <div class="nav-sub" id="financeSub">
+                <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
+                <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
+                <a href="advance.html" class="active"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
+                <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
+            </div>
         </div>
-        <div class="nav-sub" id="financeSub">
-            <a href="receivables.html"><i class="fas fa-arrow-right"></i> <span>Receivables</span></a>
-            <a href="payables.html"><i class="fas fa-arrow-left"></i> <span>Payables</span></a>
-            <a href="advance.html"><i class="fas fa-hand-holding-usd"></i> <span>Advances</span></a>
-            <a href="ledger.html"><i class="fas fa-book"></i> <span>Vendor Ledger</span></a>
-        </div>
-    </div>
-    
-    <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
-    <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
-   <a href="assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
+        
+        <a href="provision.html"><i class="fas fa-calculator"></i> <span>Provision</span></a>
+        <a href="payroll.html"><i class="fas fa-users"></i> <span>Payroll</span></a>
+        <a href="assets.html"><i class="fas fa-laptop"></i> <span>Assets</span></a>
         <a href="imprest.html"><i class="fas fa-wallet"></i> <span>Imprest</span></a>
-    <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
-    <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
-</div>
+        <a href="deleted.html"><i class="fas fa-trash"></i> <span>Deleted</span></a>
+        <a href="settings.html"><i class="fas fa-cog"></i> <span>Settings</span></a>
+    </div>
     
     <div class="folder-info" onclick="selectFolder()">
         <i class="fas fa-folder"></i> <span id="folderLabel">Select Folder</span>
@@ -349,7 +349,7 @@
 
 <script>
 // ============================================================
-// SIDEBAR TOGGLE FUNCTIONS & AUTO-OPEN LOGIC
+// SIDEBAR FUNCTIONS
 // ============================================================
 function toggleSubMenu(id) {
     const sub = document.getElementById(id);
@@ -361,10 +361,22 @@ function toggleSubMenu(id) {
     }
 }
 
-// Auto-open Finance submenu on load
+// ============================================================
+// LOGIN CHECK
+// ============================================================
+(function() {
+    if (sessionStorage.getItem('skymed_logged_in') !== 'true') {
+        window.location.href = 'login.html';
+    }
+})();
+
+// ============================================================
+// AUTO-OPEN FINANCE SUBMENU ON LOAD
+// ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     const financeSub = document.getElementById('financeSub');
     if (financeSub) {
+        // Force open - since we are in Finance > Advances
         financeSub.classList.add('open');
         const arrow = document.getElementById('financeArrow');
         if (arrow) arrow.style.transform = 'rotate(180deg)';
