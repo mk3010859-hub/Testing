@@ -32,7 +32,7 @@ const STORES = [
 // 🔥 SUPABASE CONFIG - Yahan apni values daalo
 // ============================================================
 const SUPABASE_URL = 'https://ccwqofruxtvzeqxqmjey.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_hOp3KfAh8v3c15l5dr3h8w_2h4dYMbm';
+const SUPABASE_KEY = 'sb_publishable_K9KQsPH1KXCDeRdkpKDslg_JFib0TbQ';
 
 // ============================================================
 // XLSX LIBRARY LOADER
