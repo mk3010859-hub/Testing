@@ -251,7 +251,7 @@ class SkyMedDB {
     }
 
     // ============================================================
-    // SUPABASE OPERATIONS - ONLINE SYNC
+    // SUPABASE OPERATIONS - ONLINE SYNC (FIXED)
     // ============================================================
     
     async syncToSupabase() {
@@ -283,7 +283,88 @@ class SkyMedDB {
             if (!data || data.length === 0) {
                 return true;
             }
-            
+
+            // 🔥 FIX: Clean data before sending to Supabase
+            const cleanedData = data.map(item => {
+                const clean = { ...item };
+                
+                // Remove undefined values
+                Object.keys(clean).forEach(key => {
+                    if (clean[key] === undefined) {
+                        delete clean[key];
+                    }
+                });
+                
+                // Convert ID to string (Supabase TEXT type)
+                if (clean.id !== undefined && clean.id !== null) {
+                    clean.id = String(clean.id);
+                }
+                
+                // Ensure numeric fields are numbers
+                const numericFields = ['gst', 'payment_period', 'rate', 'amount', 'count', 
+                                       'debit', 'credit', 'balance', 'monthly_salary', 
+                                       'total_salary', 'imprest_amount', 'net_salary',
+                                       'deduction', 'food_total', 'accommodation_total',
+                                       'transport_total', 'other_total', 'bill_total',
+                                       'pl_balance', 'cl_balance', 'sl_balance',
+                                       'pl_used', 'cl_used', 'sl_used', 'total_leave',
+                                       'abatement_percent', 'extra_hours', 'working_days',
+                                       'week_off', 'extra_shifts', 'pl', 'cl', 'sl',
+                                       'revisions', 'backup_frequency', 'items_per_page'];
+                numericFields.forEach(field => {
+                    if (clean[field] !== undefined && clean[field] !== null) {
+                        clean[field] = parseFloat(clean[field]) || 0;
+                    }
+                });
+                
+                // Ensure boolean fields
+                const booleanFields = ['provision_applicable', 'extended', 'is_credit_note', 
+                                       'active', 'dark_mode', 'notifications', 'auto_backup',
+                                       'compact_view'];
+                booleanFields.forEach(field => {
+                    if (clean[field] !== undefined) {
+                        clean[field] = clean[field] === true || clean[field] === 'true';
+                    }
+                });
+                
+                // Convert date fields to ISO string
+                const dateFields = ['date', 'due_date', 'received_on', 'paid_on', 
+                                   'start_date', 'end_date', 'issue_date', 'return_date',
+                                   'purchase_date', 'warranty_date', 'deleted_at',
+                                   'created_at', 'updated_at', 'last_updated',
+                                   'hod_approval_date', 'shared_finance_date',
+                                   'invoice_received_date', 'doj', 'inactive_from',
+                                   'inactive_to', 'issue_date', 'from_date', 'to_date'];
+                dateFields.forEach(field => {
+                    if (clean[field] && typeof clean[field] === 'string') {
+                        const d = new Date(clean[field]);
+                        if (!isNaN(d.getTime())) {
+                            clean[field] = d.toISOString();
+                        }
+                    }
+                });
+                
+                // Ensure JSON fields are objects
+                const jsonFields = ['adjustments', 'months', 'history', 'bills', 'data',
+                                   'tabs', 'columns', 'links', 'custom_fields', 
+                                   'validations', 'quick_actions', 'old_values', 'new_values'];
+                jsonFields.forEach(field => {
+                    if (clean[field] !== undefined && clean[field] !== null) {
+                        if (typeof clean[field] === 'string') {
+                            try {
+                                clean[field] = JSON.parse(clean[field]);
+                            } catch(e) {
+                                clean[field] = {};
+                            }
+                        }
+                    }
+                });
+                
+                return clean;
+            });
+
+            console.log(`📤 Sending ${cleanedData.length} records to ${store}`);
+
             const response = await fetch(`${SUPABASE_URL}/rest/v1/${store}?on_conflict=id`, {
                 method: 'POST',
                 headers: {
@@ -292,17 +373,18 @@ class SkyMedDB {
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Prefer': 'resolution=merge-duplicates'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(cleanedData)
             });
-            
+
             if (!response.ok) {
-                if (response.status === 404) {
-                    console.warn(`⚠️ Table "${store}" not found in Supabase. Please create it.`);
-                }
-                throw new Error(`HTTP ${response.status}`);
+                const errorText = await response.text();
+                console.error(`❌ Supabase error for ${store}:`, response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
-            console.log(`✅ Saved ${data.length} records to ${store}`);
+            
+            console.log(`✅ Saved ${cleanedData.length} records to ${store}`);
             return true;
+            
         } catch(e) {
             console.warn(`⚠️ Failed to save ${store} to Supabase:`, e);
             return false;
